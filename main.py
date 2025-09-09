@@ -136,6 +136,10 @@ async def main():
     background_image_night = load_image_safe(ASSETS / "flappybird_bg_night.png", False).convert()
     background_image_night = pygame.transform.scale(background_image_night, (GAME_WIDTH, GAME_HEIGHT))
 
+    base_image = load_image_safe(ASSETS / "base.png", True)
+    base_image = pygame.transform.scale(base_image, (GAME_WIDTH, pipe_height // 8))
+    base_rect = base_image.get_rect(topleft=(0, GAME_HEIGHT - base_image.get_height()))
+
     bird_image = load_image_safe(ASSETS / "flappybird.png", True)
     bird_image = pygame.transform.scale(bird_image, (bird_width, bird_height))
 
@@ -151,6 +155,7 @@ async def main():
     # Game state
     bird = Bird(bird_image)
     pipes = []
+    base = False
     velocity_x = -2
     velocity_y = 0
     gravity = 0.4
@@ -226,15 +231,19 @@ async def main():
             a = bg_from.copy(); a.set_alpha(alpha_from); window.blit(a, (0, 0))
             b = bg_to.copy();   b.set_alpha(alpha_to);   window.blit(b, (0, 0))
     
-        # Draw bird (rotated by pitch)
-        rot = pygame.transform.rotozoom(bird.img, bird.pitch, 1.0)
-        rot_rect = rot.get_rect(center=bird.center)
-        window.blit(rot, rot_rect)
 
         # Draw pipes
         for pipe in pipes:
             window.blit(pipe.img, pipe)
 
+        # Draw base, after pipes so base sits on top of pipes
+        window.blit(base_image, (0, GAME_HEIGHT - base_image.get_height()))
+
+        # Draw bird (rotated by pitch)
+        rot = pygame.transform.rotozoom(bird.img, bird.pitch, 1.0)
+        rot_rect = rot.get_rect(center=bird.center)
+        window.blit(rot, rot_rect)
+        
         # Score display (original styling)
         emoji_rect = emoji_image.get_rect(topleft=(5, 6))
         window.blit(emoji_image, emoji_rect)
@@ -281,16 +290,19 @@ async def main():
         velocity_y += gravity
         bird.y += int(float(velocity_y))
         bird.y = max(bird.y, 0)
-
-        if bird.y > GAME_HEIGHT:
+        
+        # Ground collision (base)
+        if bird.bottom > base_rect.top:
+            bird.bottom = base_rect.top # sit on top of base
+            velocity_y = 0
             game_over = True
             if audio_initialized:
                 try:
                     sfx.play_fall()
                 except Exception as e:
-                    print(f"Crash sound error: {e}")
-            return
+                    print(f"Fall sound error: {e}")
 
+        # Move pipes toward bird            
         for pipe in pipes:
             pipe.x += velocity_x
 
