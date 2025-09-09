@@ -101,18 +101,22 @@ def _play_on_free_channel(snd):
     """Find a free channel and play sound."""
     if not snd:
         return
-    # For mobile: use specific channel allocation
     try:
-        # Try to use reserved channel first (more reliable on mobile)
-        if SFX_CH and not SFX_CH.get_busy():
-            SFX_CH.play(snd)
+        # Mobile Safari fix: always force stop and play on specific channels
+        # Jump uses channel 1, crash uses channel 2
+        if snd == jump_sound:
+            ch = pygame.mixer.Channel(1)
+            ch.stop()  # Force stop any playing sound
+            ch.play(snd)
+        elif snd == crash_sound:
+            ch = pygame.mixer.Channel(2)
+            ch.stop()
+            ch.play(snd)
         else:
-            # Fall back to finding any free channel
-            ch = pygame.mixer.find_channel(False)  # False = don't force
-            if ch:
-                ch.play(snd)
+            # Fallback for other sounds
+            if SFX_CH and not SFX_CH.get_busy():
+                SFX_CH.play(snd)
             else:
-                # Force a channel if none free
                 ch = pygame.mixer.find_channel(True)
                 if ch:
                     ch.play(snd)
@@ -120,7 +124,21 @@ def _play_on_free_channel(snd):
         print(f"SFX play error: {e}")
 
 
+def wake_audio_context():
+    """Mobile Safari fix: wake up audio context on each interaction."""
+    try:
+        # Play silent sound to keep audio context active
+        if pygame.mixer.get_init():
+            # Get any channel and play nothing to wake context
+            ch = pygame.mixer.Channel(3)
+            ch.stop()
+            # This forces audio context to stay active
+    except:
+        pass
+
+
 def play_jump():
+    wake_audio_context()  # Wake audio on every tap
     if jump_sound:
         _play_on_free_channel(jump_sound)
     else:
@@ -128,6 +146,7 @@ def play_jump():
 
 
 def play_crash():
+    wake_audio_context()  # Wake audio on crash too
     if crash_sound:
         _play_on_free_channel(crash_sound)
     else:

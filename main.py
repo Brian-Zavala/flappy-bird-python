@@ -15,6 +15,7 @@ try:
         play_crash,
         jump_sound,
         crash_sound,
+        wake_audio_context,
     )
 except Exception as e:
     print("sound_effects import failed:", e)
@@ -35,6 +36,9 @@ except Exception as e:
         pass
 
     def play_crash():
+        pass
+    
+    def wake_audio_context():
         pass
     
     jump_sound = None
@@ -167,6 +171,7 @@ async def main():
 
     # ---- AUDIO ----
     audio_armed = IS_WEB
+    audio_keep_alive_counter = 0
 
     def unlock_audio_if_needed():
         nonlocal audio_armed
@@ -178,6 +183,14 @@ async def main():
             init_sounds()
             warmup_sfx()  # decode SFX once so mobile fires instantly
             play_background()
+            
+            # Mobile Safari fix: play a silent sound immediately to activate context
+            if jump_sound:
+                v = jump_sound.get_volume()
+                jump_sound.set_volume(0)
+                pygame.mixer.Channel(1).play(jump_sound)
+                pygame.mixer.Channel(1).stop()
+                jump_sound.set_volume(v)
             
             # Debug output to verify on phone
             print("WEB AUDIO: unlocked + warmed")
@@ -191,7 +204,7 @@ async def main():
                 print(f"crash SFX: {crash_sound.get_length():.2f}s @ {crash_sound.get_num_channels()} ch")
             else:
                 print("crash SFX: NOT LOADED")
-            print(f"Total channels: {pygame.mixer.get_num_channels()}, reserved: 2")
+            print(f"Total channels: {pygame.mixer.get_num_channels()}")
         except Exception as e:
             print("WEB AUDIO unlock failed:", e)
 
@@ -353,6 +366,16 @@ async def main():
         draw()
         pygame.display.update()
         clock.tick(60)
+        
+        # Mobile audio keep-alive: periodically wake audio context
+        if IS_WEB and not audio_armed:
+            audio_keep_alive_counter += 1
+            if audio_keep_alive_counter > 120:  # Every 2 seconds at 60fps
+                audio_keep_alive_counter = 0
+                try:
+                    wake_audio_context()
+                except:
+                    pass
 
         await asyncio.sleep(0)
 
