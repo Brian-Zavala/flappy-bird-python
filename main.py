@@ -294,19 +294,18 @@ async def main():
                         game_over = False
                         velocity_y = 0
 
-            # Handle touch/mouse input
-            if event.type == pygame.MOUSEBUTTONDOWN:
+            # Handle touch/mouse input (including mobile FINGERDOWN)
+            if event.type == pygame.MOUSEBUTTONDOWN or event.type == pygame.FINGERDOWN:
                 # Initialize audio on first interaction
                 init_audio_on_first_gesture()
                 
                 if not game_over:
                     velocity_y = -6
-                    try:
-                        if audio_initialized:
-                            from sound_effects import play_jump
+                    if audio_initialized and SOUND_MODULE_LOADED:
+                        try:
                             play_jump()
-                    except:
-                        pass
+                        except Exception as e:
+                            print(f"Jump sound error: {e}")
                 else:
                     # Reset game
                     bird.y = int(float(bird_y))
