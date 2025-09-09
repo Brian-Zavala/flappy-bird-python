@@ -158,20 +158,28 @@ async def main():
         for pipe in pipes:
             window.blit(pipe.img, pipe)
 
-        # Draw score
+        # Draw emoji/score badge centered at top
+        emoji_x = GAME_WIDTH / 2 - emoji_image.get_width() / 2
+        emoji_y = GAME_HEIGHT / 8 - emoji_image.get_height() / 2
+        window.blit(emoji_image, (emoji_x, emoji_y))
+        
+        # Draw score centered on the badge
         score_txt = font.render(str(int(score)), True, (255, 255, 255))
-        window.blit(score_txt, (GAME_WIDTH / 2 - 20, GAME_HEIGHT / 8))
+        score_x = GAME_WIDTH / 2 - score_txt.get_width() / 2
+        score_y = GAME_HEIGHT / 8 - score_txt.get_height() / 2
+        window.blit(score_txt, (score_x, score_y))
 
-        # Draw emoji image
-        window.blit(emoji_image, (5, 5))
-
-        # Draw game over text
+        # Draw game over text (properly centered)
         if game_over:
             game_over_txt = font.render("GAME OVER", True, (255, 255, 255))
-            window.blit(game_over_txt, (GAME_WIDTH / 2 - 100, GAME_HEIGHT / 2 - 50))
+            game_over_x = GAME_WIDTH / 2 - game_over_txt.get_width() / 2
+            game_over_y = GAME_HEIGHT / 2 - 50
+            window.blit(game_over_txt, (game_over_x, game_over_y))
             
             restart_txt = font_small.render("Tap to restart", True, (255, 255, 255))
-            window.blit(restart_txt, (GAME_WIDTH / 2 - 80, GAME_HEIGHT / 2))
+            restart_x = GAME_WIDTH / 2 - restart_txt.get_width() / 2
+            restart_y = GAME_HEIGHT / 2
+            window.blit(restart_txt, (restart_x, restart_y))
 
     def create_pipe():
         gap = 180
