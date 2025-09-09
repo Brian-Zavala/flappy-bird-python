@@ -4,6 +4,35 @@ import random
 import asyncio
 from pathlib import Path
 
+# Import sound functions
+try:
+    from sound_effects import (
+        init_audio_once,
+        load_sounds,
+        warmup_sounds,
+        load_background_music,
+        play_jump,
+        play_crash
+    )
+    SOUND_MODULE_LOADED = True
+except Exception as e:
+    print(f"sound_effects import failed: {e}")
+    SOUND_MODULE_LOADED = False
+    
+    # Fallback functions if import fails
+    def init_audio_once():
+        return False
+    def load_sounds():
+        pass
+    def warmup_sounds():
+        pass
+    def load_background_music():
+        pass
+    def play_jump():
+        pass
+    def play_crash():
+        pass
+
 # Game Variables
 GAME_WIDTH = 360
 GAME_HEIGHT = 640
@@ -122,17 +151,10 @@ async def main():
         """Initialize audio system on first user interaction.
         This ensures we're inside the browser's user gesture window."""
         nonlocal audio_initialized
-        if audio_initialized:
+        if audio_initialized or not SOUND_MODULE_LOADED:
             return
         
         try:
-            from sound_effects import (
-                init_audio_once,
-                load_sounds,
-                warmup_sounds,
-                load_background_music
-            )
-            
             # Initialize mixer with pygbag settings
             if init_audio_once():
                 # Load all sounds
@@ -144,6 +166,8 @@ async def main():
                 
                 audio_initialized = True
                 print("✓ Audio system initialized on first gesture")
+            else:
+                print("Mixer already initialized")
         except Exception as e:
             print(f"Audio init failed: {e}")
             audio_initialized = True  # Don't retry
@@ -206,12 +230,11 @@ async def main():
 
         if bird.y > GAME_HEIGHT:
             game_over = True
-            try:
-                if audio_initialized:
-                    from sound_effects import play_crash
+            if audio_initialized and SOUND_MODULE_LOADED:
+                try:
                     play_crash()
-            except:
-                pass
+                except Exception as e:
+                    print(f"Crash sound error: {e}")
             return
 
         for pipe in pipes:
@@ -257,12 +280,11 @@ async def main():
                     
                     if not game_over:
                         velocity_y = -6
-                        try:
-                            if audio_initialized:
-                                from sound_effects import play_jump
+                        if audio_initialized and SOUND_MODULE_LOADED:
+                            try:
                                 play_jump()
-                        except:
-                            pass
+                            except Exception as e:
+                                print(f"Jump sound error: {e}")
                     else:
                         # Reset game
                         bird.y = int(float(bird_y))
