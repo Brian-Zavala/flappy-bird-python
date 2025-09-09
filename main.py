@@ -57,10 +57,13 @@ class Pipe(pygame.Rect):
 async def main():
     global bird, pipes, velocity_x, velocity_y, gravity, score, game_over, window, clock
 
-    # Initialize only what we need (DON'T call pygame.init())
-    pygame.display.init()
-    pygame.font.init()
-    print(f"PYGAME MODULES INIT (mixer excluded), IS_WEB = {IS_WEB}")
+    # Initialize pygame but immediately quit mixer to control it later
+    pygame.init()
+    # Immediately quit mixer so we can initialize it properly on first gesture
+    if pygame.mixer.get_init():
+        pygame.mixer.quit()
+        print("Quit auto-initialized mixer to control initialization timing")
+    print(f"PYGAME INIT OK (mixer disabled), IS_WEB = {IS_WEB}")
 
     # Simple display mode for web compatibility
     flags = 0 if IS_WEB else (pygame.SCALED | pygame.RESIZABLE)
@@ -157,6 +160,8 @@ async def main():
     # Optional: catch the earliest possible user gesture (helps if a loader overlay eats events)
     if IS_WEB:
         try:
+            # These imports only exist in web environment (pyodide/emscripten)
+            # We import here because they would fail on desktop Python
             import platform
             from pyodide.ffi import create_proxy
             def _unlock_from_js(_=None):
@@ -164,8 +169,10 @@ async def main():
             _proxy = create_proxy(_unlock_from_js)
             platform.window.addEventListener("pointerdown", _proxy, {"once": True, "capture": True})
             print("Global pointerdown capture set for audio unlock")
+        except ImportError as e:
+            print(f"Web-specific imports not available: {e}")
         except Exception as e:
-            print("Global pointerdown capture not set:", e)
+            print(f"Global pointerdown capture not set: {e}")
 
     def draw():
         window.blit(background_image, (0, 0))

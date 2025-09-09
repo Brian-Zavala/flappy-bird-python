@@ -12,3 +12,6 @@ dependencies = [
 web = [
     "pygbag>=0.8.0",
 ]
+
+[tool.pygbag]
+cdn = "https://pygame-web.github.io/archives/repo/"
