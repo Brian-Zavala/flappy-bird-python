@@ -61,10 +61,10 @@ async def main():
     # This prevents mixer from being initialized with wrong settings
     pygame.display.init()
     pygame.font.init()
-    pygame.time.init()
-    pygame.event.init()
-    pygame.key.init()
-    pygame.mouse.init()
+    # pygame.time doesn't need init - it's always available
+    # pygame.event doesn't need separate init
+    # pygame.key doesn't need separate init  
+    # pygame.mouse doesn't need separate init
     print(f"PYGAME MODULES INIT OK (mixer excluded), IS_WEB = {IS_WEB}")
 
     # Simple display mode for web compatibility
