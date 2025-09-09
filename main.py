@@ -174,7 +174,7 @@ async def main():
             return
         audio_armed = False
         try:
-            init_audio_once(sample_rate=48000, channels=2, buffer=1024)
+            init_audio_once(sample_rate=24000, channels=1, buffer=512)
             init_sounds()
             warmup_sfx()  # decode SFX once so mobile fires instantly
             play_background()
@@ -252,10 +252,7 @@ async def main():
             if bird.colliderect(pipe):
                 game_over = True
                 try:
-                    if IS_WEB and crash_sound:
-                        pygame.mixer.Channel(2).play(crash_sound)
-                    else:
-                        play_crash()
+                    play_crash()
                 except Exception as e:
                     print(f"Crash sound error: {e}")
 
@@ -280,7 +277,7 @@ async def main():
     # Desktop can init immediately
     if not IS_WEB:
         try:
-            init_audio_once(sample_rate=48000, channels=2, buffer=1024)
+            init_audio_once(sample_rate=24000, channels=1, buffer=512)
             init_sounds()
             warmup_sfx()
             play_background()
@@ -311,11 +308,7 @@ async def main():
                     if not game_over:
                         velocity_y = -6
                         try:
-                            # Force immediate playback for mobile
-                            if IS_WEB:
-                                pygame.mixer.Channel(1).play(jump_sound) if jump_sound else None
-                            else:
-                                play_jump()
+                            play_jump()
                         except Exception as e:
                             print(f"Jump sound error: {e}")
                     else:

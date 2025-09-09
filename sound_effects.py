@@ -12,22 +12,21 @@ SFX_CH = None  # dedicated SFX channel
 SFX_READY = False
 
 
-def init_audio_once(sample_rate=48000, channels=1, buffer=256):
-    """Init mixer exactly once with mobile-friendly params."""
+def init_audio_once(sample_rate=24000, channels=1, buffer=512):
+    """Init mixer exactly once with mobile-friendly params.
+    24kHz mono is recommended by pygbag docs for mobile compatibility."""
     if not pygame.mixer.get_init():
-        # One consistent init for *everything*
-        # allowedchanges=0 prevents SDL from silently changing format
+        # Use 24kHz mono as recommended by pygbag documentation
         pygame.mixer.pre_init(
-            frequency=sample_rate, size=-16, channels=channels, buffer=buffer, allowedchanges=0
+            frequency=sample_rate, size=-16, channels=channels, buffer=buffer
         )
         pygame.mixer.init()
-        # Plenty of channels for overlapping SFX
-        pygame.mixer.set_num_channels(16)
-        pygame.mixer.set_reserved(2)  # reserve channels 0-1 for SFX
+        # Fewer channels for better mobile performance
+        pygame.mixer.set_num_channels(8)
 
     global SFX_CH
     if SFX_CH is None:
-        # Reserve a dedicated channel for 'tap' SFX so it never gets starved
+        # Simple channel allocation
         SFX_CH = pygame.mixer.Channel(0)
         SFX_CH.set_volume(1.0)
 
@@ -36,10 +35,10 @@ def init_sounds():
     """Load SFX. Call this after init_audio_once()."""
     global jump_sound, crash_sound
     
-    # Try WAV first (best browser compatibility), fall back to OGG
+    # Try OGG first (pygbag recommended), fall back to WAV
     jump_paths = [
-        SOUNDS / "wing_flap.wav",
-        SOUNDS / "wing_flap.ogg"
+        SOUNDS / "wing_flap.ogg",
+        SOUNDS / "wing_flap.wav"
     ]
     for path in jump_paths:
         try:
@@ -54,8 +53,8 @@ def init_sounds():
         jump_sound = None
 
     crash_paths = [
-        SOUNDS / "game_over.wav",
-        SOUNDS / "game_over.ogg"
+        SOUNDS / "game_over.ogg",
+        SOUNDS / "game_over.wav"
     ]
     for path in crash_paths:
         try:
