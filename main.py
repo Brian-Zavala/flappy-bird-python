@@ -155,19 +155,18 @@ async def main():
             return
         
         try:
-            # Initialize mixer with pygbag settings
-            if init_audio_once():
-                # Load all sounds
-                load_sounds()
-                # Warm them up (decode inside gesture)
-                warmup_sounds()
-                # Start background music
-                load_background_music()
-                
-                audio_initialized = True
-                print("✓ Audio system initialized on first gesture")
-            else:
-                print("Mixer already initialized")
+            # Initialize mixer if needed
+            init_audio_once()
+            
+            # Always load sounds on first gesture (whether mixer was just init or not)
+            load_sounds()
+            # Warm them up (decode inside gesture)
+            warmup_sounds()
+            # Start background music
+            load_background_music()
+            
+            audio_initialized = True
+            print("✓ Audio system initialized on first gesture")
         except Exception as e:
             print(f"Audio init failed: {e}")
             audio_initialized = True  # Don't retry
