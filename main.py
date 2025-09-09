@@ -187,10 +187,10 @@ async def main():
         emoji_y = 10
         window.blit(emoji_image, (emoji_x, emoji_y))
         
-        # Draw score centered on the badge
+        # Draw score centered inside the badge
         score_txt = font.render(str(int(score)), True, (255, 255, 255))
-        score_x = emoji_x + emoji_image.get_width() / 2 - score_txt.get_width() / 2
-        score_y = emoji_y + emoji_image.get_height() / 2 - score_txt.get_height() / 2
+        score_x = emoji_x + (emoji_image.get_width() - score_txt.get_width()) // 2
+        score_y = emoji_y + (emoji_image.get_height() - score_txt.get_height()) // 2
         window.blit(score_txt, (score_x, score_y))
 
         # Draw game over text (properly centered)
