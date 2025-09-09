@@ -4,7 +4,21 @@ import random
 import asyncio
 from pathlib import Path
 
-# Import sound functions
+# Fallback functions (defined first, may be overridden by import)
+def init_audio_once():
+    return False
+def load_sounds():
+    pass
+def warmup_sounds():
+    pass
+def load_background_music():
+    pass
+def play_jump():
+    pass
+def play_crash():
+    pass
+
+# Try to import real sound functions
 try:
     from sound_effects import (
         init_audio_once,
@@ -14,24 +28,9 @@ try:
         play_jump,
         play_crash
     )
-    SOUND_MODULE_LOADED = True
+    print("Sound module loaded successfully")
 except Exception as e:
-    print(f"sound_effects import failed: {e}")
-    SOUND_MODULE_LOADED = False
-    
-    # Fallback functions if import fails
-    def init_audio_once():
-        return False
-    def load_sounds():
-        pass
-    def warmup_sounds():
-        pass
-    def load_background_music():
-        pass
-    def play_jump():
-        pass
-    def play_crash():
-        pass
+    print(f"sound_effects import failed: {e} - using fallback functions")
 
 # Game Variables
 GAME_WIDTH = 360
