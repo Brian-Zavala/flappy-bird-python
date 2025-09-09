@@ -57,15 +57,10 @@ class Pipe(pygame.Rect):
 async def main():
     global bird, pipes, velocity_x, velocity_y, gravity, score, game_over, window, clock
 
-    # Initialize pygame modules individually (but NOT mixer - wait for user gesture)
-    # This prevents mixer from being initialized with wrong settings
+    # Initialize only what we need (DON'T call pygame.init())
     pygame.display.init()
     pygame.font.init()
-    # pygame.time doesn't need init - it's always available
-    # pygame.event doesn't need separate init
-    # pygame.key doesn't need separate init  
-    # pygame.mouse doesn't need separate init
-    print(f"PYGAME MODULES INIT OK (mixer excluded), IS_WEB = {IS_WEB}")
+    print(f"PYGAME MODULES INIT (mixer excluded), IS_WEB = {IS_WEB}")
 
     # Simple display mode for web compatibility
     flags = 0 if IS_WEB else (pygame.SCALED | pygame.RESIZABLE)
@@ -138,34 +133,39 @@ async def main():
     
     # Audio state - wait for first user gesture
     audio_initialized = False
+    audio_failed_once = False  # allow retry if the first attempt fails
     
     def init_audio_on_first_gesture():
         """Initialize audio on first user interaction (tap/click/keydown)."""
-        nonlocal audio_initialized
+        nonlocal audio_initialized, audio_failed_once
         if audio_initialized:
             return
 
-        # Mark immediately to prevent repeated calls
-        audio_initialized = True
-
         try:
-            # Force reinit mixer with correct settings even if already initialized
-            # This handles the case where pygame.init() might have touched it
-            if pygame.mixer.get_init():
-                pygame.mixer.quit()
-                print("Quit pre-existing mixer to reinit with correct settings")
-            
-            # Now init with web-friendly settings
-            sfx.init_audio_once()
-
-            # Always load + warm + music
+            # Always coerce mixer into our known-good config inside the gesture
+            sfx.ensure_mixer_config()
             sfx.load_sounds()
             sfx.warmup_sounds()
             sfx.load_background_music()
-
-            print("✓ Audio system initialized on first gesture")
+            audio_initialized = True
+            print("✓ Audio unlocked & warmed")
         except Exception as e:
-            print(f"Audio init failed: {e}")
+            audio_failed_once = True
+            print(f"Audio init failed (will allow retry): {e}")
+            # leave audio_initialized = False so the next tap retries
+    
+    # Optional: catch the earliest possible user gesture (helps if a loader overlay eats events)
+    if IS_WEB:
+        try:
+            import platform
+            from pyodide.ffi import create_proxy
+            def _unlock_from_js(_=None):
+                init_audio_on_first_gesture()
+            _proxy = create_proxy(_unlock_from_js)
+            platform.window.addEventListener("pointerdown", _proxy, {"once": True, "capture": True})
+            print("Global pointerdown capture set for audio unlock")
+        except Exception as e:
+            print("Global pointerdown capture not set:", e)
 
     def draw():
         window.blit(background_image, (0, 0))

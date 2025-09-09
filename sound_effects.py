@@ -14,22 +14,27 @@ jump_sound = None
 crash_sound = None
 _music_loaded = False
 
-def init_audio_once():
-    """Init mixer with pygbag-friendly params, forcing correct settings."""
-    # Always init with correct settings for web compatibility
-    # Even if mixer was already initialized with wrong settings
-    try:
-        pygame.mixer.pre_init(frequency=24000, size=-16, channels=1, buffer=512)
+# Our expected, web-safe mixer configuration
+_MIX_FREQ, _MIX_SIZE, _MIX_CHANS, _MIX_BUF = 24000, -16, 1, 512
+_EXPECTED = (_MIX_FREQ, _MIX_SIZE, _MIX_CHANS)
+
+def ensure_mixer_config():
+    """Force mixer into the exact web-friendly config (idempotent, safe on mobile)."""
+    init = pygame.mixer.get_init()  # None or (freq, size, channels)
+    if init != _EXPECTED:
+        try:
+            pygame.mixer.quit()
+        except Exception:
+            pass
+        pygame.mixer.pre_init(_MIX_FREQ, _MIX_SIZE, _MIX_CHANS, _MIX_BUF)
         pygame.mixer.init()
         pygame.mixer.set_num_channels(8)
-        print("Mixer initialized with web-friendly settings")
-        return True
-    except pygame.error as e:
-        print(f"Mixer init error (may already be initialized): {e}")
-        # Even if init fails, ensure we have the right number of channels
-        if pygame.mixer.get_init():
-            pygame.mixer.set_num_channels(8)
-        return False
+        print("Mixer (re)initialized:", pygame.mixer.get_init())
+
+def init_audio_once():
+    """Kept for compatibility; called inside a gesture."""
+    ensure_mixer_config()
+    return True
 
 def _load(name: str):
     p = SOUNDS / name
