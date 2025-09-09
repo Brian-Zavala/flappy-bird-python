@@ -4,33 +4,20 @@ import random
 import asyncio
 from pathlib import Path
 
-# Fallback functions (defined first, may be overridden by import)
-def init_audio_once():
-    return False
-def load_sounds():
-    pass
-def warmup_sounds():
-    pass
-def load_background_music():
-    pass
-def play_jump():
-    pass
-def play_crash():
-    pass
-
-# Try to import real sound functions
+# ---- audio wiring (namespace import; no shadowing) ----
 try:
-    from sound_effects import (
-        init_audio_once,
-        load_sounds,
-        warmup_sounds,
-        load_background_music,
-        play_jump,
-        play_crash
-    )
+    import sound_effects as sfx
     print("Sound module loaded successfully")
 except Exception as e:
-    print(f"sound_effects import failed: {e} - using fallback functions")
+    print(f"sound_effects import failed: {e} - using no-op audio")
+    class _NoAudio:
+        def init_audio_once(self): return False
+        def load_sounds(self): pass
+        def warmup_sounds(self): pass
+        def load_background_music(self): pass
+        def play_jump(self): pass
+        def play_crash(self): pass
+    sfx = _NoAudio()
 
 # Game Variables
 GAME_WIDTH = 360
@@ -157,12 +144,12 @@ async def main():
 
         try:
             # Initialize mixer if not already
-            init_audio_once()
+            sfx.init_audio_once()
 
             # Always load + warm + music (don't skip if mixer already running)
-            load_sounds()
-            warmup_sounds()
-            load_background_music()
+            sfx.load_sounds()
+            sfx.warmup_sounds()
+            sfx.load_background_music()
 
             print("✓ Audio system initialized on first gesture")
         except Exception as e:
@@ -229,7 +216,7 @@ async def main():
             game_over = True
             if audio_initialized:
                 try:
-                    play_crash()
+                    sfx.play_crash()
                 except Exception as e:
                     print(f"Crash sound error: {e}")
             return
@@ -245,7 +232,7 @@ async def main():
                 game_over = True
                 if audio_initialized:
                     try:
-                        play_crash()
+                        sfx.play_crash()
                     except Exception as e:
                         print(f"Crash sound error: {e}")
 
@@ -278,7 +265,7 @@ async def main():
                         velocity_y = -6
                         if audio_initialized:
                             try:
-                                play_jump()
+                                sfx.play_jump()
                             except Exception as e:
                                 print(f"Jump sound error: {e}")
                     else:
@@ -298,7 +285,7 @@ async def main():
                     velocity_y = -6
                     if audio_initialized:
                         try:
-                            play_jump()
+                            sfx.play_jump()
                         except Exception as e:
                             print(f"Jump sound error: {e}")
                 else:

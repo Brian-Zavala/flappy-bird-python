@@ -1,4 +1,3 @@
-# sound_effects.py
 from pathlib import Path
 import sys, pygame
 
@@ -24,9 +23,11 @@ def init_audio_once():
         return True
     return False
 
-def _load(pathname):
-    p = SOUNDS / pathname
-    return pygame.mixer.Sound(str(p))
+def _load(name: str):
+    p = SOUNDS / name
+    s = pygame.mixer.Sound(str(p))
+    s.set_volume(0.6)
+    return s
 
 def load_sounds():
     global jump_sound, crash_sound
