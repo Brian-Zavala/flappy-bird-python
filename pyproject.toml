@@ -1,0 +1,14 @@
+[project]
+name = "flappy-bird-python"
+version = "0.1.0"
+description = "Add your description here"
+readme = "README.md"
+requires-python = ">=3.13"
+dependencies = [
+    "pygame-ce>=2.4.0",
+]
+
+[project.optional-dependencies]
+web = [
+    "pygbag>=0.8.0",
+]

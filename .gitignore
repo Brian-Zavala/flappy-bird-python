@@ -1,0 +1,47 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+*.egg-info/
+dist/
+*.egg
+
+# Virtual environments
+venv/
+ENV/
+env/
+.venv
+
+# uv
+.venv/
+uv.lock
+
+# IDEs
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.DS_Store
+
+# Pygame/Pygbag build artifacts
+build/
+web-build/
+*.wasm
+*.data
+*.js.mem
+
+# Test files
+test_*.py
+*.bak.*
+
+# Audio cache
+*.wav.cache
+*.mp3.cache
+
+# Local config
+.pyrightconfig.json
+.python-version
+ruff.toml
