@@ -148,30 +148,23 @@ async def main():
     audio_initialized = False
     
     def init_audio_on_first_gesture():
-        """Initialize audio system on first user interaction.
-        This ensures we're inside the browser's user gesture window."""
+        """Initialize audio on first user interaction (tap/click/keydown)."""
         nonlocal audio_initialized
         if audio_initialized:
             return
-        
-        # Set this IMMEDIATELY to prevent repeated calls
+
+        # Mark immediately to prevent repeated calls
         audio_initialized = True
-        
-        if not SOUND_MODULE_LOADED:
-            print("Sound module not loaded - audio disabled")
-            return
-        
+
         try:
-            # Initialize mixer if needed
+            # Initialize mixer if not already
             init_audio_once()
-            
-            # Always load sounds on first gesture (whether mixer was just init or not)
+
+            # Always load + warm + music (don't skip if mixer already running)
             load_sounds()
-            # Warm them up (decode inside gesture)
             warmup_sounds()
-            # Start background music
             load_background_music()
-            
+
             print("✓ Audio system initialized on first gesture")
         except Exception as e:
             print(f"Audio init failed: {e}")
@@ -235,7 +228,7 @@ async def main():
 
         if bird.y > GAME_HEIGHT:
             game_over = True
-            if audio_initialized and SOUND_MODULE_LOADED:
+            if audio_initialized:
                 try:
                     play_crash()
                 except Exception as e:
@@ -285,7 +278,7 @@ async def main():
                     
                     if not game_over:
                         velocity_y = -6
-                        if audio_initialized and SOUND_MODULE_LOADED:
+                        if audio_initialized:
                             try:
                                 play_jump()
                             except Exception as e:
@@ -305,7 +298,7 @@ async def main():
                 
                 if not game_over:
                     velocity_y = -6
-                    if audio_initialized and SOUND_MODULE_LOADED:
+                    if audio_initialized:
                         try:
                             play_jump()
                         except Exception as e:
