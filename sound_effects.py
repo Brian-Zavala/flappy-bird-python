@@ -39,7 +39,7 @@ def init_audio_once():
 def _load(name: str):
     p = SOUNDS / name
     s = pygame.mixer.Sound(str(p))
-    s.set_volume(0.20)
+    s.set_volume(0.15)
     return s
 
 def load_sounds():
@@ -64,7 +64,7 @@ def load_background_music():
     if _music_loaded: return
     try:
         pygame.mixer.music.load(str(SOUNDS / "flappy_background_song.ogg"))
-        pygame.mixer.music.set_volume(0.05)
+        pygame.mixer.music.set_volume(0.01)
         pygame.mixer.music.play(-1)
         _music_loaded = True
     except Exception as e:
