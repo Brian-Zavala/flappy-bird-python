@@ -151,7 +151,14 @@ async def main():
         """Initialize audio system on first user interaction.
         This ensures we're inside the browser's user gesture window."""
         nonlocal audio_initialized
-        if audio_initialized or not SOUND_MODULE_LOADED:
+        if audio_initialized:
+            return
+        
+        # Set this IMMEDIATELY to prevent repeated calls
+        audio_initialized = True
+        
+        if not SOUND_MODULE_LOADED:
+            print("Sound module not loaded - audio disabled")
             return
         
         try:
@@ -165,11 +172,9 @@ async def main():
             # Start background music
             load_background_music()
             
-            audio_initialized = True
             print("✓ Audio system initialized on first gesture")
         except Exception as e:
             print(f"Audio init failed: {e}")
-            audio_initialized = True  # Don't retry
 
     def draw():
         window.blit(background_image, (0, 0))
