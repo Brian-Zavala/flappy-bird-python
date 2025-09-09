@@ -39,14 +39,14 @@ def init_audio_once():
 def _load(name: str):
     p = SOUNDS / name
     s = pygame.mixer.Sound(str(p))
-    s.set_volume(0.6)
+    s.set_volume(0.4)
     return s
 
 def load_sounds():
     global jump_sound, crash_sound
-    # Prioritize OGG; they must be 24 kHz mono
+    # Must use OGG Format! they must be 24 kHz mono!!
     jump_sound  = _load("wing_flap.ogg")
-    crash_sound = _load("game_over.ogg")  # Using game_over.ogg as your crash sound
+    crash_sound = _load("game_over.ogg")  
 
 def warmup_sounds():
     """Decode/cache inside the user gesture window."""
@@ -64,7 +64,7 @@ def load_background_music():
     if _music_loaded: return
     try:
         pygame.mixer.music.load(str(SOUNDS / "flappy_background_song.ogg"))
-        pygame.mixer.music.set_volume(0.35)
+        pygame.mixer.music.set_volume(0.20)
         pygame.mixer.music.play(-1)
         _music_loaded = True
     except Exception as e:

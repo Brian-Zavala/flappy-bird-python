@@ -1,0 +1,292 @@
+/home/baz/.local/share/mise/installs/python/3.13.7/lib/python3.13/site-packages/pygbag/optimizing.py:62: UserWarning: Black not found for processing folder=PosixPath('/home/baz/workspace/github.com/Brian-Zavala/flappy-bird-python')
+  warnings.warn(f"Black not found for processing {folder=}")
+
+Serving python files from [/home/baz/workspace/github.com/Brian-Zavala/flappy-bird-python/build/web]
+
+with no security/performance in mind, i'm just a test tool : don't rely on me
+
+
+SUMMARY
+________________________
+
+# the app folder
+app_folder=/home/baz/workspace/github.com/Brian-Zavala/flappy-bird-python
+
+# artefacts directory
+build_dir=/home/baz/workspace/github.com/Brian-Zavala/flappy-bird-python/build/web
+
+# cache directory
+cache=/home/baz/workspace/github.com/Brian-Zavala/flappy-bird-python/build/web-cache
+
+# the window title and icon name
+app_name=flappy-bird-python
+
+# package name, better make it unique
+package=web.pygame.flappy-bird-python-1757424684
+
+# icons:  96x96 for desktop, 16x16 for web
+icon=favicon.png
+
+# js/wasm provider
+cdn=https://pygame-web.github.io/archives/repo/
+
+now packing application ....
+
+
+Now in /
+     /uv.lock
+     /README.md
+     /sound_effects.py
+     /main.py
+     /pyproject.toml
+Now in /sounds
+     /sounds/game_over.ogg
+     /sounds/wing_flap.ogg
+     /sounds/flappy_background_song.ogg
+     /sounds/game_over-pygbag.ogg
+     /sounds/wing_flap-pygbag.ogg
+     /sounds/flappy_background_song-pygbag.ogg
+Now in /assets
+     /assets/PressStart2P.ttf
+     /assets/bottompipe.png
+     /assets/flappybirdbg.png
+     /assets/flappybird.png
+     /assets/score.png
+     /assets/toppipe.png
+optimizing /home/baz/workspace/github.com/Brian-Zavala/flappy-bird-python
+opt-skip(73) /sounds/game_over.ogg
+opt-skip(73) /sounds/wing_flap.ogg
+opt-skip(73) /sounds/flappy_background_song.ogg
+	/home/baz/workspace/github.com/Brian-Zavala/flappy-bird-python : uv.lock
+	/home/baz/workspace/github.com/Brian-Zavala/flappy-bird-python : README.md
+	/home/baz/workspace/github.com/Brian-Zavala/flappy-bird-python : sound_effects.py
+	/home/baz/workspace/github.com/Brian-Zavala/flappy-bird-python : main.py
+	/home/baz/workspace/github.com/Brian-Zavala/flappy-bird-python : pyproject.toml
+	/home/baz/workspace/github.com/Brian-Zavala/flappy-bird-python : sounds/game_over-pygbag.ogg
+	/home/baz/workspace/github.com/Brian-Zavala/flappy-bird-python : sounds/wing_flap-pygbag.ogg
+	/home/baz/workspace/github.com/Brian-Zavala/flappy-bird-python : sounds/flappy_background_song-pygbag.ogg
+	/home/baz/workspace/github.com/Brian-Zavala/flappy-bird-python : assets/PressStart2P.ttf
+	/home/baz/workspace/github.com/Brian-Zavala/flappy-bird-python : assets/bottompipe.png
+	/home/baz/workspace/github.com/Brian-Zavala/flappy-bird-python : assets/flappybirdbg.png
+	/home/baz/workspace/github.com/Brian-Zavala/flappy-bird-python : assets/flappybird.png
+	/home/baz/workspace/github.com/Brian-Zavala/flappy-bird-python : assets/score.png
+	/home/baz/workspace/github.com/Brian-Zavala/flappy-bird-python : assets/toppipe.png
+packing 14 files complete
+
+    caching template https://pygame-web.github.io/archives/repo/default.tmpl
+    cached locally at /home/baz/workspace/github.com/Brian-Zavala/flappy-bird-python/build/web-cache/e445016914c25c2a136a98990101e281.tmpl
+    result files will be in /home/baz/workspace/github.com/Brian-Zavala/flappy-bird-python/build/web
+
+urllib.request.urlretrieve("https://pygame-web.github.io/archives/repo/default.tmpl", "/home/baz/workspace/github.com/Brian-Zavala/flappy-bird-python/build/web-cache/e445016914c25c2a136a98990101e281.tmpl")
+WARNING: web.get(https://pygame-web.github.io/archives/repo/default.tmpl) : HTTP Error 404: Not Found
+retrying in 5 seconds
+WARNING: web.get(https://pygame-web.github.io/archives/repo/default.tmpl) : HTTP Error 404: Not Found
+retrying in 5 seconds
+WARNING: web.get(https://pygame-web.github.io/archives/repo/default.tmpl) : HTTP Error 404: Not Found
+retrying in 5 seconds
+WARNING: web.get(https://pygame-web.github.io/archives/repo/default.tmpl) : HTTP Error 404: Not Found
+retrying in 5 seconds
+WARNING: web.get(https://pygame-web.github.io/archives/repo/default.tmpl) : HTTP Error 404: Not Found
+retrying in 5 seconds
+WARNING: web.get(https://pygame-web.github.io/archives/repo/default.tmpl) : HTTP Error 404: Not Found
+retrying in 5 seconds
+WARNING: web.get(https://pygame-web.github.io/archives/repo/default.tmpl) : HTTP Error 404: Not Found
+retrying in 5 seconds
+WARNING: web.get(https://pygame-web.github.io/archives/repo/default.tmpl) : HTTP Error 404: Not Found
+retrying in 5 seconds
+WARNING: web.get(https://pygame-web.github.io/archives/repo/default.tmpl) : HTTP Error 404: Not Found
+retrying in 5 seconds
+WARNING: web.get(https://pygame-web.github.io/archives/repo/default.tmpl) : HTTP Error 404: Not Found
+retrying in 5 seconds
+WARNING: web.get(https://pygame-web.github.io/archives/repo/default.tmpl) : HTTP Error 404: Not Found
+retrying in 5 seconds
+WARNING: web.get(https://pygame-web.github.io/archives/repo/default.tmpl) : HTTP Error 404: Not Found
+retrying in 5 seconds
+WARNING: web.get(https://pygame-web.github.io/archives/repo/default.tmpl) : HTTP Error 404: Not Found
+retrying in 5 seconds
+WARNING: web.get(https://pygame-web.github.io/archives/repo/default.tmpl) : HTTP Error 404: Not Found
+retrying in 5 seconds
+WARNING: web.get(https://pygame-web.github.io/archives/repo/default.tmpl) : HTTP Error 404: Not Found
+retrying in 5 seconds
+WARNING: web.get(https://pygame-web.github.io/archives/repo/default.tmpl) : HTTP Error 404: Not Found
+retrying in 5 seconds
+WARNING: web.get(https://pygame-web.github.io/archives/repo/default.tmpl) : HTTP Error 404: Not Found
+retrying in 5 seconds
+WARNING: web.get(https://pygame-web.github.io/archives/repo/default.tmpl) : HTTP Error 404: Not Found
+retrying in 5 seconds
+WARNING: web.get(https://pygame-web.github.io/archives/repo/default.tmpl) : HTTP Error 404: Not Found
+retrying in 5 seconds
+WARNING: web.get(https://pygame-web.github.io/archives/repo/default.tmpl) : HTTP Error 404: Not Found
+retrying in 5 seconds
+WARNING: web.get(https://pygame-web.github.io/archives/repo/default.tmpl) : HTTP Error 404: Not Found
+retrying in 5 seconds
+WARNING: web.get(https://pygame-web.github.io/archives/repo/default.tmpl) : HTTP Error 404: Not Found
+retrying in 5 seconds
+WARNING: web.get(https://pygame-web.github.io/archives/repo/default.tmpl) : HTTP Error 404: Not Found
+retrying in 5 seconds
+WARNING: web.get(https://pygame-web.github.io/archives/repo/default.tmpl) : HTTP Error 404: Not Found
+retrying in 5 seconds
+WARNING: web.get(https://pygame-web.github.io/archives/repo/default.tmpl) : HTTP Error 404: Not Found
+retrying in 5 seconds
+WARNING: web.get(https://pygame-web.github.io/archives/repo/default.tmpl) : HTTP Error 404: Not Found
+retrying in 5 seconds
+WARNING: web.get(https://pygame-web.github.io/archives/repo/default.tmpl) : HTTP Error 404: Not Found
+retrying in 5 seconds
+WARNING: web.get(https://pygame-web.github.io/archives/repo/default.tmpl) : HTTP Error 404: Not Found
+retrying in 5 seconds
+WARNING: web.get(https://pygame-web.github.io/archives/repo/default.tmpl) : HTTP Error 404: Not Found
+retrying in 5 seconds
+WARNING: web.get(https://pygame-web.github.io/archives/repo/default.tmpl) : HTTP Error 404: Not Found
+retrying in 5 seconds
+WARNING: web.get(https://pygame-web.github.io/archives/repo/default.tmpl) : HTTP Error 404: Not Found
+retrying in 5 seconds
+WARNING: web.get(https://pygame-web.github.io/archives/repo/default.tmpl) : HTTP Error 404: Not Found
+retrying in 5 seconds
+WARNING: web.get(https://pygame-web.github.io/archives/repo/default.tmpl) : HTTP Error 404: Not Found
+retrying in 5 seconds
+WARNING: web.get(https://pygame-web.github.io/archives/repo/default.tmpl) : HTTP Error 404: Not Found
+retrying in 5 seconds
+WARNING: web.get(https://pygame-web.github.io/archives/repo/default.tmpl) : HTTP Error 404: Not Found
+retrying in 5 seconds
+WARNING: web.get(https://pygame-web.github.io/archives/repo/default.tmpl) : HTTP Error 404: Not Found
+retrying in 5 seconds
+WARNING: web.get(https://pygame-web.github.io/archives/repo/default.tmpl) : HTTP Error 404: Not Found
+retrying in 5 seconds
+WARNING: web.get(https://pygame-web.github.io/archives/repo/default.tmpl) : HTTP Error 404: Not Found
+retrying in 5 seconds
+WARNING: web.get(https://pygame-web.github.io/archives/repo/default.tmpl) : HTTP Error 404: Not Found
+retrying in 5 seconds
+WARNING: web.get(https://pygame-web.github.io/archives/repo/default.tmpl) : HTTP Error 404: Not Found
+retrying in 5 seconds
+WARNING: web.get(https://pygame-web.github.io/archives/repo/default.tmpl) : HTTP Error 404: Not Found
+retrying in 5 seconds
+WARNING: web.get(https://pygame-web.github.io/archives/repo/default.tmpl) : HTTP Error 404: Not Found
+retrying in 5 seconds
+WARNING: web.get(https://pygame-web.github.io/archives/repo/default.tmpl) : HTTP Error 404: Not Found
+retrying in 5 seconds
+WARNING: web.get(https://pygame-web.github.io/archives/repo/default.tmpl) : HTTP Error 404: Not Found
+retrying in 5 seconds
+WARNING: web.get(https://pygame-web.github.io/archives/repo/default.tmpl) : HTTP Error 404: Not Found
+retrying in 5 seconds
+WARNING: web.get(https://pygame-web.github.io/archives/repo/default.tmpl) : HTTP Error 404: Not Found
+retrying in 5 seconds
+WARNING: web.get(https://pygame-web.github.io/archives/repo/default.tmpl) : HTTP Error 404: Not Found
+retrying in 5 seconds
+WARNING: web.get(https://pygame-web.github.io/archives/repo/default.tmpl) : HTTP Error 404: Not Found
+retrying in 5 seconds
+WARNING: web.get(https://pygame-web.github.io/archives/repo/default.tmpl) : HTTP Error 404: Not Found
+retrying in 5 seconds
+WARNING: web.get(https://pygame-web.github.io/archives/repo/default.tmpl) : HTTP Error 404: Not Found
+retrying in 5 seconds
+WARNING: web.get(https://pygame-web.github.io/archives/repo/default.tmpl) : HTTP Error 404: Not Found
+retrying in 5 seconds
+WARNING: web.get(https://pygame-web.github.io/archives/repo/default.tmpl) : HTTP Error 404: Not Found
+retrying in 5 seconds
+WARNING: web.get(https://pygame-web.github.io/archives/repo/default.tmpl) : HTTP Error 404: Not Found
+retrying in 5 seconds
+WARNING: web.get(https://pygame-web.github.io/archives/repo/default.tmpl) : HTTP Error 404: Not Found
+retrying in 5 seconds
+WARNING: web.get(https://pygame-web.github.io/archives/repo/default.tmpl) : HTTP Error 404: Not Found
+retrying in 5 seconds
+WARNING: web.get(https://pygame-web.github.io/archives/repo/default.tmpl) : HTTP Error 404: Not Found
+retrying in 5 seconds
+WARNING: web.get(https://pygame-web.github.io/archives/repo/default.tmpl) : HTTP Error 404: Not Found
+retrying in 5 seconds
+WARNING: web.get(https://pygame-web.github.io/archives/repo/default.tmpl) : HTTP Error 404: Not Found
+retrying in 5 seconds
+WARNING: web.get(https://pygame-web.github.io/archives/repo/default.tmpl) : HTTP Error 404: Not Found
+retrying in 5 seconds
+WARNING: web.get(https://pygame-web.github.io/archives/repo/default.tmpl) : HTTP Error 404: Not Found
+retrying in 5 seconds
+WARNING: web.get(https://pygame-web.github.io/archives/repo/default.tmpl) : HTTP Error 404: Not Found
+retrying in 5 seconds
+WARNING: web.get(https://pygame-web.github.io/archives/repo/default.tmpl) : HTTP Error 404: Not Found
+retrying in 5 seconds
+WARNING: web.get(https://pygame-web.github.io/archives/repo/default.tmpl) : HTTP Error 404: Not Found
+retrying in 5 seconds
+WARNING: web.get(https://pygame-web.github.io/archives/repo/default.tmpl) : HTTP Error 404: Not Found
+retrying in 5 seconds
+WARNING: web.get(https://pygame-web.github.io/archives/repo/default.tmpl) : HTTP Error 404: Not Found
+retrying in 5 seconds
+WARNING: web.get(https://pygame-web.github.io/archives/repo/default.tmpl) : HTTP Error 404: Not Found
+retrying in 5 seconds
+WARNING: web.get(https://pygame-web.github.io/archives/repo/default.tmpl) : HTTP Error 404: Not Found
+retrying in 5 seconds
+WARNING: web.get(https://pygame-web.github.io/archives/repo/default.tmpl) : HTTP Error 404: Not Found
+retrying in 5 seconds
+WARNING: web.get(https://pygame-web.github.io/archives/repo/default.tmpl) : HTTP Error 404: Not Found
+retrying in 5 seconds
+WARNING: web.get(https://pygame-web.github.io/archives/repo/default.tmpl) : HTTP Error 404: Not Found
+retrying in 5 seconds
+WARNING: web.get(https://pygame-web.github.io/archives/repo/default.tmpl) : HTTP Error 404: Not Found
+retrying in 5 seconds
+WARNING: web.get(https://pygame-web.github.io/archives/repo/default.tmpl) : HTTP Error 404: Not Found
+retrying in 5 seconds
+WARNING: web.get(https://pygame-web.github.io/archives/repo/default.tmpl) : HTTP Error 404: Not Found
+retrying in 5 seconds
+WARNING: web.get(https://pygame-web.github.io/archives/repo/default.tmpl) : HTTP Error 404: Not Found
+retrying in 5 seconds
+WARNING: web.get(https://pygame-web.github.io/archives/repo/default.tmpl) : HTTP Error 404: Not Found
+retrying in 5 seconds
+WARNING: web.get(https://pygame-web.github.io/archives/repo/default.tmpl) : HTTP Error 404: Not Found
+retrying in 5 seconds
+WARNING: web.get(https://pygame-web.github.io/archives/repo/default.tmpl) : HTTP Error 404: Not Found
+retrying in 5 seconds
+WARNING: web.get(https://pygame-web.github.io/archives/repo/default.tmpl) : HTTP Error 404: Not Found
+retrying in 5 seconds
+WARNING: web.get(https://pygame-web.github.io/archives/repo/default.tmpl) : HTTP Error 404: Not Found
+retrying in 5 seconds
+WARNING: web.get(https://pygame-web.github.io/archives/repo/default.tmpl) : HTTP Error 404: Not Found
+retrying in 5 seconds
+WARNING: web.get(https://pygame-web.github.io/archives/repo/default.tmpl) : HTTP Error 404: Not Found
+retrying in 5 seconds
+WARNING: web.get(https://pygame-web.github.io/archives/repo/default.tmpl) : HTTP Error 404: Not Found
+retrying in 5 seconds
+WARNING: web.get(https://pygame-web.github.io/archives/repo/default.tmpl) : HTTP Error 404: Not Found
+retrying in 5 seconds
+WARNING: web.get(https://pygame-web.github.io/archives/repo/default.tmpl) : HTTP Error 404: Not Found
+retrying in 5 seconds
+WARNING: web.get(https://pygame-web.github.io/archives/repo/default.tmpl) : HTTP Error 404: Not Found
+retrying in 5 seconds
+WARNING: web.get(https://pygame-web.github.io/archives/repo/default.tmpl) : HTTP Error 404: Not Found
+retrying in 5 seconds
+WARNING: web.get(https://pygame-web.github.io/archives/repo/default.tmpl) : HTTP Error 404: Not Found
+retrying in 5 seconds
+WARNING: web.get(https://pygame-web.github.io/archives/repo/default.tmpl) : HTTP Error 404: Not Found
+retrying in 5 seconds
+WARNING: web.get(https://pygame-web.github.io/archives/repo/default.tmpl) : HTTP Error 404: Not Found
+retrying in 5 seconds
+WARNING: web.get(https://pygame-web.github.io/archives/repo/default.tmpl) : HTTP Error 404: Not Found
+retrying in 5 seconds
+WARNING: web.get(https://pygame-web.github.io/archives/repo/default.tmpl) : HTTP Error 404: Not Found
+retrying in 5 seconds
+WARNING: web.get(https://pygame-web.github.io/archives/repo/default.tmpl) : HTTP Error 404: Not Found
+retrying in 5 seconds
+WARNING: web.get(https://pygame-web.github.io/archives/repo/default.tmpl) : HTTP Error 404: Not Found
+retrying in 5 seconds
+WARNING: web.get(https://pygame-web.github.io/archives/repo/default.tmpl) : HTTP Error 404: Not Found
+retrying in 5 seconds
+WARNING: web.get(https://pygame-web.github.io/archives/repo/default.tmpl) : HTTP Error 404: Not Found
+retrying in 5 seconds
+WARNING: web.get(https://pygame-web.github.io/archives/repo/default.tmpl) : HTTP Error 404: Not Found
+retrying in 5 seconds
+WARNING: web.get(https://pygame-web.github.io/archives/repo/default.tmpl) : HTTP Error 404: Not Found
+retrying in 5 seconds
+WARNING: web.get(https://pygame-web.github.io/archives/repo/default.tmpl) : HTTP Error 404: Not Found
+retrying in 5 seconds
+WARNING: web.get(https://pygame-web.github.io/archives/repo/default.tmpl) : HTTP Error 404: Not Found
+retrying in 5 seconds
+WARNING: web.get(https://pygame-web.github.io/archives/repo/default.tmpl) : HTTP Error 404: Not Found
+retrying in 5 seconds
+WARNING: web.get(https://pygame-web.github.io/archives/repo/default.tmpl) : HTTP Error 404: Not Found
+retrying in 5 seconds
+WARNING: web.get(https://pygame-web.github.io/archives/repo/default.tmpl) : HTTP Error 404: Not Found
+retrying in 5 seconds
+WARNING: web.get(https://pygame-web.github.io/archives/repo/default.tmpl) : HTTP Error 404: Not Found
+retrying in 5 seconds
+WARNING: web.get(https://pygame-web.github.io/archives/repo/default.tmpl) : HTTP Error 404: Not Found
+retrying in 5 seconds
+WARNING: web.get(https://pygame-web.github.io/archives/repo/default.tmpl) : HTTP Error 404: Not Found
+retrying in 5 seconds
+WARNING: web.get(https://pygame-web.github.io/archives/repo/default.tmpl) : HTTP Error 404: Not Found
+retrying in 5 seconds
