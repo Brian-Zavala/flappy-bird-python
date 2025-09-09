@@ -243,12 +243,11 @@ async def main():
 
             if bird.colliderect(pipe):
                 game_over = True
-                try:
-                    if audio_initialized:
-                        from sound_effects import play_crash
+                if audio_initialized:
+                    try:
                         play_crash()
-                except:
-                    pass
+                    except Exception as e:
+                        print(f"Crash sound error: {e}")
 
         while len(pipes) > 0 and pipes[0].x + pipe_width < -pipe_width:
             pipes.pop(0)
