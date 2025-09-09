@@ -30,7 +30,7 @@ jobs:
 
       - name: Build with pygbag and enable autorun
         run: |
-          python -m pygbag --build --archive --ume_block 0 main.py
+          python -m pygbag --build --archive main.py
           # Force autorun to 1 so game starts automatically
           sed -i 's/autorun : 0/autorun : 1/g' build/web/index.html
 
