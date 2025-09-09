@@ -15,13 +15,21 @@ crash_sound = None
 _music_loaded = False
 
 def init_audio_once():
-    """Init mixer exactly once with pygbag-friendly params."""
-    if not pygame.mixer.get_init():
+    """Init mixer with pygbag-friendly params, forcing correct settings."""
+    # Always init with correct settings for web compatibility
+    # Even if mixer was already initialized with wrong settings
+    try:
         pygame.mixer.pre_init(frequency=24000, size=-16, channels=1, buffer=512)
         pygame.mixer.init()
         pygame.mixer.set_num_channels(8)
+        print("Mixer initialized with web-friendly settings")
         return True
-    return False
+    except pygame.error as e:
+        print(f"Mixer init error (may already be initialized): {e}")
+        # Even if init fails, ensure we have the right number of channels
+        if pygame.mixer.get_init():
+            pygame.mixer.set_num_channels(8)
+        return False
 
 def _load(name: str):
     p = SOUNDS / name

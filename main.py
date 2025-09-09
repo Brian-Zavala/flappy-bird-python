@@ -57,9 +57,15 @@ class Pipe(pygame.Rect):
 async def main():
     global bird, pipes, velocity_x, velocity_y, gravity, score, game_over, window, clock
 
-    # Initialize pygame (but NOT mixer yet - wait for user gesture)
-    pygame.init()
-    print(f"PYGAME INIT OK, IS_WEB = {IS_WEB}")
+    # Initialize pygame modules individually (but NOT mixer - wait for user gesture)
+    # This prevents mixer from being initialized with wrong settings
+    pygame.display.init()
+    pygame.font.init()
+    pygame.time.init()
+    pygame.event.init()
+    pygame.key.init()
+    pygame.mouse.init()
+    print(f"PYGAME MODULES INIT OK (mixer excluded), IS_WEB = {IS_WEB}")
 
     # Simple display mode for web compatibility
     flags = 0 if IS_WEB else (pygame.SCALED | pygame.RESIZABLE)
@@ -143,10 +149,16 @@ async def main():
         audio_initialized = True
 
         try:
-            # Initialize mixer if not already
+            # Force reinit mixer with correct settings even if already initialized
+            # This handles the case where pygame.init() might have touched it
+            if pygame.mixer.get_init():
+                pygame.mixer.quit()
+                print("Quit pre-existing mixer to reinit with correct settings")
+            
+            # Now init with web-friendly settings
             sfx.init_audio_once()
 
-            # Always load + warm + music (don't skip if mixer already running)
+            # Always load + warm + music
             sfx.load_sounds()
             sfx.warmup_sounds()
             sfx.load_background_music()
