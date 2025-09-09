@@ -182,16 +182,17 @@ async def main():
         for pipe in pipes:
             window.blit(pipe.img, pipe)
 
-        # Draw emoji/score badge in top-left corner
-        emoji_x = 10
-        emoji_y = 10
-        window.blit(emoji_image, (emoji_x, emoji_y))
-        
-        # Draw score centered inside the badge
-        score_txt = font.render(str(int(score)), True, (255, 255, 255))
-        score_x = emoji_x + (emoji_image.get_width() - score_txt.get_width()) // 2
-        score_y = emoji_y + (emoji_image.get_height() - score_txt.get_height()) // 2
-        window.blit(score_txt, (score_x, score_y))
+        # Score display (original styling)
+        emoji_rect = emoji_image.get_rect(topleft=(5, 6))
+        window.blit(emoji_image, emoji_rect)
+
+        score_str = str(int(score))
+        text_surf = font_small.render(score_str, True, (255, 255, 255))
+
+        pad = 16
+        inner = emoji_rect.inflate(-2 * pad, -2 * pad)
+        text_rect = text_surf.get_rect(center=inner.center)
+        window.blit(text_surf, text_rect)
 
         # Draw game over text (properly centered)
         if game_over:
