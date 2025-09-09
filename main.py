@@ -3,6 +3,7 @@ import sys
 import random
 import asyncio
 from pathlib import Path
+import theme_changer
 
 # ---- audio wiring (namespace import; no shadowing) ----
 try:
@@ -17,11 +18,27 @@ except Exception as e:
         def load_background_music(self): pass
         def play_jump(self): pass
         def play_crash(self): pass
+        def play_score_sound(self): pass
+        def play_fall(self): pass
+        def play_swoosh(self): pass
+
     sfx = _NoAudio()
 
 # Game Variables
 GAME_WIDTH = 360
 GAME_HEIGHT = 640
+
+# bird pitch constants 
+MAX_PITCH_UP_DEG    = 25.0    # nose-up clamp
+MAX_PITCH_DOWN_DEG  = -90.0   # nose-down clamp
+PITCH_GAIN          = 3.0     # maps velocity_y -> degrees
+PITCH_LERP_PER_SEC  = 12.0    # smoothing speed (higher = snappier)
+
+
+
+# simple dt timer
+last_time = pygame.time.get_ticks()
+
 
 # Check if running in web browser
 IS_WEB = sys.platform == "emscripten"
@@ -34,6 +51,7 @@ bird_y = GAME_HEIGHT / 2
 bird_width = 34
 bird_height = 24
 
+
 # Pipe class
 pipe_x = GAME_WIDTH
 pipe_y = 0
@@ -45,6 +63,7 @@ class Bird(pygame.Rect):
     def __init__(self, img):
         pygame.Rect.__init__(self, bird_x, bird_y, bird_width, bird_height)
         self.img = img
+        self.pitch = 0.0  # degrees, +up / -down
 
 
 class Pipe(pygame.Rect):
@@ -56,6 +75,7 @@ class Pipe(pygame.Rect):
 
 async def main():
     global bird, pipes, velocity_x, velocity_y, gravity, score, game_over, window, clock
+
 
     # Initialize pygame but immediately quit mixer to control it later
     pygame.init()
@@ -110,8 +130,11 @@ async def main():
             return surf
 
     # Load all images
-    background_image = load_image_safe(ASSETS / "flappybirdbg.png", False)
-    background_image = pygame.transform.scale(background_image, (GAME_WIDTH, GAME_HEIGHT))
+    background_image_day = load_image_safe(ASSETS / "flappybird_bg_day.png", False).convert()
+    background_image_day = pygame.transform.scale(background_image_day, (GAME_WIDTH, GAME_HEIGHT))
+    
+    background_image_night = load_image_safe(ASSETS / "flappybird_bg_night.png", False).convert()
+    background_image_night = pygame.transform.scale(background_image_night, (GAME_WIDTH, GAME_HEIGHT))
 
     bird_image = load_image_safe(ASSETS / "flappybird.png", True)
     bird_image = pygame.transform.scale(bird_image, (bird_width, bird_height))
@@ -133,6 +156,10 @@ async def main():
     gravity = 0.4
     score = 0
     game_over = False
+
+    # make sure bird has a pitch field
+    if not hasattr(bird, "pitch"):
+        bird.pitch = 0.0
     
     # Audio state - wait for first user gesture
     audio_initialized = False
@@ -173,12 +200,36 @@ async def main():
             print(f"Web-specific imports not available: {e}")
         except Exception as e:
             print(f"Global pointerdown capture not set: {e}")
+    # Initialize theme state (removed transition check - will be in game loop)
 
     def draw():
-        window.blit(background_image, (0, 0))
+        now = pygame.time.get_ticks()
+        theme_state = theme_changer.get_theme_state()
+        
+        if not theme_state['transitioning']:
+            if theme_state['current_theme'] == "day":
+                window.blit(background_image_day, (0, 0))
+            else:
+                window.blit(background_image_night, (0, 0))
+        else:
+            # Crossfade
+            t = (now - theme_state['transition_start']) / theme_changer.TRANSITION_MS
+            if   t < 0: t = 0.0
+            elif t > 1: t = 1.0
+            alpha_to = int(t * 255)
+            alpha_from = 255 - alpha_to
 
-        # Draw bird
-        window.blit(bird.img, bird)
+            # Copy so we can set per-surface alpha without mutating originals
+            bg_from = background_image_day   if theme_state['transition_from'] == "day"   else background_image_night
+            bg_to   = background_image_night if theme_state['transition_to']   == "night" else background_image_day
+
+            a = bg_from.copy(); a.set_alpha(alpha_from); window.blit(a, (0, 0))
+            b = bg_to.copy();   b.set_alpha(alpha_to);   window.blit(b, (0, 0))
+    
+        # Draw bird (rotated by pitch)
+        rot = pygame.transform.rotozoom(bird.img, bird.pitch, 1.0)
+        rot_rect = rot.get_rect(center=bird.center)
+        window.blit(rot, rot_rect)
 
         # Draw pipes
         for pipe in pipes:
@@ -226,7 +277,7 @@ async def main():
 
     def move():
         global velocity_y, score, game_over
-        
+
         velocity_y += gravity
         bird.y += int(float(velocity_y))
         bird.y = max(bird.y, 0)
@@ -235,7 +286,7 @@ async def main():
             game_over = True
             if audio_initialized:
                 try:
-                    sfx.play_crash()
+                    sfx.play_fall()
                 except Exception as e:
                     print(f"Crash sound error: {e}")
             return
@@ -245,6 +296,8 @@ async def main():
 
             if not pipe.passed and bird.x > pipe.x + pipe.width:
                 score += 0.5
+                print(f"[SCORE] Increased to {score:.1f}")
+                sfx.play_score_sound()
                 pipe.passed = True
 
             if bird.colliderect(pipe):
@@ -282,6 +335,8 @@ async def main():
                     
                     if not game_over:
                         velocity_y = -6
+                        # instant nose-up bias
+                        bird.pitch = max(bird.pitch, 0.0)
                         if audio_initialized:
                             try:
                                 sfx.play_jump()
@@ -290,10 +345,22 @@ async def main():
                     else:
                         # Reset game
                         bird.y = int(float(bird_y))
+                        bird.pitch = 0.0  # Reset bird pitch
                         pipes.clear()
                         score = 0
                         game_over = False
                         velocity_y = 0
+                        # Reset theme to day on game restart
+                        theme_changer.reset_theme()
+
+            # Optional extra swoosh sounds on keyup            
+            # if event.type == pygame.KEYUP:
+            #     if event.key in (pygame.K_SPACE, pygame.K_x, pygame.K_UP):
+            #         if not game_over:
+            #             try:
+            #                 sfx.play_swoosh()
+            #             except Exception as e:
+            #                 print(f"Swoosh sound error: {e}")
 
             # Handle touch/mouse input (including mobile FINGERDOWN)
             if event.type == pygame.MOUSEBUTTONDOWN or event.type == pygame.FINGERDOWN:
@@ -310,14 +377,42 @@ async def main():
                 else:
                     # Reset game
                     bird.y = int(float(bird_y))
+                    bird.pitch = 0.0  # Reset bird pitch
                     pipes.clear()
                     score = 0
                     game_over = False
                     velocity_y = 0
+                    # Reset theme to day on game restart
+                    theme_changer.reset_theme()
 
         # Update and draw
         if not game_over:
+            global last_time
             move()
+            # ----- update bird pitch after velocity_y has changed in move() -----
+            now = pygame.time.get_ticks()
+            dt = (now - last_time) / 1000.0
+            last_time = now
+
+            # velocity -> target angle
+            if game_over:
+                target_pitch = MAX_PITCH_DOWN_DEG
+            else:
+                raw = -velocity_y * PITCH_GAIN  # negative vel (up) -> positive angle
+                target_pitch = max(MAX_PITCH_DOWN_DEG, min(MAX_PITCH_UP_DEG, raw))
+
+            # smooth toward target (fps independent)
+            blend = min(1.0, PITCH_LERP_PER_SEC * dt)
+            bird.pitch += (target_pitch - bird.pitch) * blend
+            # ---------------------------------------------
+            
+            # Check if we should start a new transition based on current score
+            theme_changer.maybe_start_theme_transition(now, score)
+            
+            # Check if current transition should complete
+            theme_state = theme_changer.get_theme_state()
+            if theme_state['transitioning'] and now - theme_state['transition_start'] >= theme_changer.TRANSITION_MS:
+                theme_changer.complete_transition()
 
         draw()
         pygame.display.update()

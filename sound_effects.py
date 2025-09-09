@@ -11,7 +11,10 @@ else:
     SOUNDS = ROOT
 
 jump_sound = None
+swoosh_sound = None
 crash_sound = None
+fall_sound = None
+new_point_sound = None
 _music_loaded = False
 
 # Our expected, web-safe mixer configuration
@@ -43,28 +46,37 @@ def _load(name: str):
     return s
 
 def load_sounds():
-    global jump_sound, crash_sound
+    global jump_sound, crash_sound, fall_sound, new_point_sound, swoosh_sound
     # Must use OGG Format! they must be 24 kHz mono!!
     jump_sound  = _load("wing_flap.ogg")
-    crash_sound = _load("game_over.ogg")  
+    crash_sound = _load("audio_hit.ogg")  
+    fall_sound  = _load("game_over.ogg")
+    new_point_sound = _load("audio_point.ogg")
+    swoosh_sound = _load("audio_swoosh.ogg")
+
 
 def warmup_sounds():
     """Decode/cache inside the user gesture window."""
-    for s in (jump_sound, crash_sound):
+    # Warm up all 5 sounds for better performance
+    for s in (jump_sound, crash_sound, fall_sound, new_point_sound, swoosh_sound):
         if not s: continue
-        vol = s.get_volume()
-        s.set_volume(0.0)
-        ch = pygame.mixer.find_channel(True)
-        ch.play(s)
-        ch.stop()
-        s.set_volume(vol)
+        try:
+            vol = s.get_volume()
+            s.set_volume(0.0)
+            ch = pygame.mixer.find_channel(True)
+            if ch:  # Only play if we got a valid channel
+                ch.play(s)
+                ch.stop()
+            s.set_volume(vol)
+        except Exception as e:
+            print(f"Warning: Could not warm up sound: {e}")
 
 def load_background_music():
     global _music_loaded
     if _music_loaded: return
     try:
         pygame.mixer.music.load(str(SOUNDS / "flappy_background_song.ogg"))
-        pygame.mixer.music.set_volume(0.01)
+        pygame.mixer.music.set_volume(0.02)
         pygame.mixer.music.play(-1)
         _music_loaded = True
     except Exception as e:
@@ -77,3 +89,15 @@ def play_jump():
 def play_crash():
     if crash_sound:
         crash_sound.play()
+
+def play_fall():
+    if fall_sound:
+        fall_sound.play()
+
+def play_score_sound():
+    if new_point_sound:
+        new_point_sound.play()
+
+def play_swoosh():
+    if swoosh_sound:
+        swoosh_sound.play()
