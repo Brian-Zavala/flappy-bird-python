@@ -4,34 +4,80 @@ import random
 import asyncio
 from pathlib import Path
 
-# Import sound functions
-try:
-    from sound_effects import (
-        init_audio_once,
-        load_sounds,
-        warmup_sounds,
-        load_background_music,
-        play_jump,
-        play_crash
-    )
-    SOUND_MODULE_LOADED = True
-except Exception as e:
-    print(f"sound_effects import failed: {e}")
-    SOUND_MODULE_LOADED = False
+# Sound system - embedded directly to avoid import issues
+SOUNDS_DIR = None
+for candidate in [Path(__file__).parent / "sounds", Path(__file__).parent / "assets" / "sounds"]:
+    if candidate.exists():
+        SOUNDS_DIR = candidate
+        break
+
+jump_sound = None
+crash_sound = None
+_music_loaded = False
+
+def init_audio_once():
+    """Init mixer exactly once with pygbag-friendly params."""
+    if not pygame.mixer.get_init():
+        pygame.mixer.pre_init(frequency=24000, size=-16, channels=1, buffer=512)
+        pygame.mixer.init()
+        pygame.mixer.set_num_channels(8)
+        return True
+    return False
+
+def load_sounds():
+    """Load sound effects."""
+    global jump_sound, crash_sound
+    if not SOUNDS_DIR:
+        print("No sounds directory found")
+        return
     
-    # Fallback functions if import fails
-    def init_audio_once():
-        return False
-    def load_sounds():
-        pass
-    def warmup_sounds():
-        pass
-    def load_background_music():
-        pass
-    def play_jump():
-        pass
-    def play_crash():
-        pass
+    try:
+        jump_sound = pygame.mixer.Sound(str(SOUNDS_DIR / "wing_flap.ogg"))
+        print(f"✓ Jump sound loaded")
+    except Exception as e:
+        print(f"Failed to load jump sound: {e}")
+    
+    try:
+        crash_sound = pygame.mixer.Sound(str(SOUNDS_DIR / "game_over.ogg"))
+        print(f"✓ Crash sound loaded")
+    except Exception as e:
+        print(f"Failed to load crash sound: {e}")
+
+def warmup_sounds():
+    """Decode/cache inside the user gesture window."""
+    for s in (jump_sound, crash_sound):
+        if s:
+            vol = s.get_volume()
+            s.set_volume(0.0)
+            ch = pygame.mixer.find_channel(True)
+            if ch:
+                ch.play(s)
+                ch.stop()
+            s.set_volume(vol)
+
+def load_background_music():
+    """Load and start background music."""
+    global _music_loaded
+    if _music_loaded or not SOUNDS_DIR:
+        return
+    try:
+        pygame.mixer.music.load(str(SOUNDS_DIR / "flappy_background_song.ogg"))
+        pygame.mixer.music.set_volume(0.35)
+        pygame.mixer.music.play(-1)
+        _music_loaded = True
+        print("✓ Background music started")
+    except Exception as e:
+        print(f"Background music failed: {e}")
+
+def play_jump():
+    """Play jump sound."""
+    if jump_sound:
+        jump_sound.play()
+
+def play_crash():
+    """Play crash sound."""
+    if crash_sound:
+        crash_sound.play()
 
 # Game Variables
 GAME_WIDTH = 360
@@ -151,25 +197,25 @@ async def main():
         """Initialize audio system on first user interaction.
         This ensures we're inside the browser's user gesture window."""
         nonlocal audio_initialized
-        if audio_initialized or not SOUND_MODULE_LOADED:
+        if audio_initialized:
             return
+        
+        audio_initialized = True  # Set IMMEDIATELY to prevent repeated calls
         
         try:
             # Initialize mixer if needed
             init_audio_once()
             
-            # Always load sounds on first gesture (whether mixer was just init or not)
+            # Always load sounds on first gesture
             load_sounds()
             # Warm them up (decode inside gesture)
             warmup_sounds()
             # Start background music
             load_background_music()
             
-            audio_initialized = True
             print("✓ Audio system initialized on first gesture")
         except Exception as e:
             print(f"Audio init failed: {e}")
-            audio_initialized = True  # Don't retry
 
     def draw():
         window.blit(background_image, (0, 0))
@@ -230,7 +276,7 @@ async def main():
 
         if bird.y > GAME_HEIGHT:
             game_over = True
-            if audio_initialized and SOUND_MODULE_LOADED:
+            if audio_initialized:
                 try:
                     play_crash()
                 except Exception as e:
@@ -280,7 +326,7 @@ async def main():
                     
                     if not game_over:
                         velocity_y = -6
-                        if audio_initialized and SOUND_MODULE_LOADED:
+                        if audio_initialized:
                             try:
                                 play_jump()
                             except Exception as e:
@@ -300,7 +346,7 @@ async def main():
                 
                 if not game_over:
                     velocity_y = -6
-                    if audio_initialized and SOUND_MODULE_LOADED:
+                    if audio_initialized:
                         try:
                             play_jump()
                         except Exception as e:
