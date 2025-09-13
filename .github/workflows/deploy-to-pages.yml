@@ -30,8 +30,27 @@ jobs:
 
       - name: Build with pygbag using custom template
         run: |
-          python -m pygbag --build --archive --template custom_template.tmpl main.py
-          # Keep the custom start screen (no autorun modification needed)
+          rm -rf build web || true
+          python -m pygbag . --build --template ./custom_template.tmpl
+          # Build the folder, not just the main.py file
+
+      - name: Verify pygbag injected scripts
+        run: |
+          if grep -q "{{ pygbag_scripts }}" build/web/index.html; then
+            echo "ERROR: pygbag_scripts placeholder still present. You deployed the template, not the build."
+            echo "First 120 lines of index.html:"
+            sed -n '1,120p' build/web/index.html
+            exit 1
+          fi
+          echo "✓ pygbag scripts injected successfully"
+
+      - name: Verify runtime files exist
+        run: |
+          echo "=== Checking for runtime files ==="
+          ls -l build/web
+          test -f build/web/main.js   || (echo "✗ main.js missing" && exit 1)
+          test -f build/web/main.data || (echo "✗ main.data missing" && exit 1)
+          echo "✓ Runtime files present"
 
       - name: Ensure assets are in build/web
         run: |

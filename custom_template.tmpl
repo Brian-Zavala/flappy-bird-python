@@ -104,16 +104,31 @@
     let splashHidden = false;
     let imageLoaded = false;
     
-    // Wait for canvas to be ready (non-zero dimensions and context available)
+    // Wait for canvas to actually draw something (not just blue background)
     async function waitForCanvasReady() {
       const canvas = document.getElementById('canvas');
-      for (let i = 0; i < 50; i++) { // ~5s max wait
-        if (canvas && canvas.width > 0 && canvas.height > 0 && canvas.getContext) {
-          return canvas;
+      if (!canvas) return null;
+      
+      const ctx = canvas.getContext('2d');
+      const bgColor = [0x70, 0xc5, 0xce]; // RGB of body background
+      
+      // Wait for first non-background pixel (game is drawing)
+      for (let i = 0; i < 100; i++) { // ~10s max wait
+        try {
+          // Check if canvas has drawn something other than background
+          const pixel = ctx.getImageData(0, 0, 1, 1).data;
+          if (!(pixel[0] === bgColor[0] && pixel[1] === bgColor[1] && pixel[2] === bgColor[2])) {
+            console.log('Canvas is drawing - game ready!');
+            return canvas; // Game is drawing
+          }
+        } catch (e) {
+          // Context might not be ready yet
         }
         await new Promise(r => setTimeout(r, 100));
       }
-      return canvas; // return best effort
+      
+      console.log('Timeout waiting for canvas draw - proceeding anyway');
+      return canvas; // Return canvas even if timeout
     }
     
     // Handle splash screen removal
