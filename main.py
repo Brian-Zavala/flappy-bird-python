@@ -122,7 +122,10 @@ class Pipe(pygame.Rect):
         pygame.Rect.__init__(self, pipe_x, pipe_y, pipe_width, pipe_height)
         self.img = img
         self.passed = False
-        self.vy = 0.0  # vertical movement speed
+        self.vy = 0.0
+        self.pair_gap = 0
+        self.frozen = True
+        self.frozen_y = 0
 
 
 async def main():
@@ -343,19 +346,24 @@ async def main():
         # difficulty-scaled speed for THIS PAIR (top drives)
         factor = difficulty_factor(score)
         max_speed = 0.5 + factor * 1.5  # 0.5 → 2.0
-        vy = random.choice([-1, 1]) * random.uniform(0.3, max_speed)
 
         # top pipe (driver)
         top_pipe = Pipe(top_pipe_image)
         top_pipe.x = pipe_x
         top_pipe.y = center_y - gap // 2 - pipe_height
-        top_pipe.vy = 0  # No vertical movement initially
+        top_pipe.vy = 0.0
+        top_pipe.pair_gap = gap
+        top_pipe.frozen = True
+        top_pipe.frozen_y = top_pipe.y
 
         #  bottom pipe (follower) 
         bottom_pipe = Pipe(bottom_pipe_image)
         bottom_pipe.x = pipe_x
         bottom_pipe.y = center_y + gap // 2
-        bottom_pipe.vy = 0.0  # follower pipe ignored
+        bottom_pipe.vy = 0.0
+        bottom_pipe.pair_gap = gap
+        bottom_pipe.frozen = True
+        bottom_pipe.frozen_y = bottom_pipe.y
 
         #  append in order (top, bottom)
         pipes.extend([top_pipe, bottom_pipe])
@@ -376,17 +384,10 @@ async def main():
             try: sfx.play_fall()
             except Exception: pass
     
-        # --- difficulty knobs for chaos flips ---
+        # --- difficulty knobs ---
         factor = difficulty_factor(score)
-        max_speed = 0.5 + factor * 1.5    # 0.5 → 2.0
-        flip_chance = factor * 0.05       # 0% → 5%
-
-        gap = current_gap(score)
-
-        # Bounds so the pair stays fully visible:
-        # limit top pipe's y so bottom won't dip into the base
-        min_top_y = -pipe_height
-        max_top_y = (GAME_HEIGHT - base_rect.height) - (pipe_height + gap)
+        max_speed = 0.5 + factor * 1.5
+        flip_chance = factor * 0.05
 
         enable_vertical = vertical_pipe_enabled(score)
 
@@ -399,19 +400,24 @@ async def main():
             top.x += velocity_x
             bottom.x = top.x
 
-            gap = current_gap(score)
+            pair_gap = top.pair_gap if hasattr(top, "pair_gap") else current_gap(score)
+
+            # bounds for moving state
             min_top_y = -pipe_height
-            max_top_y = (GAME_HEIGHT - base_rect.height) - (pipe_height + gap)
+            max_top_y = (GAME_HEIGHT - base_rect.height) - (pipe_height + pair_gap)
 
             if enable_vertical:
-                # init vy once per pair when movement turns on
-                if top.vy == 0.0:
+                # unfreeze on first frame of enabled state
+                if top.frozen:
+                    top.frozen = False
+                    bottom.frozen = False
+                    # seed vy once when coming out of freeze
                     top.vy = random.choice([-1, 1]) * random.uniform(0.3, max_speed)
 
-                # vertical move (top drives)
+                # vertical move
                 top.y += top.vy
 
-                # bounce within safe band
+                # bounce within band
                 if top.y < min_top_y:
                     top.y = min_top_y
                     top.vy *= -1
@@ -423,34 +429,38 @@ async def main():
                 if flip_chance > 0 and random.random() < flip_chance:
                     top.vy = random.choice([-1, 1]) * random.uniform(0.3, max_speed)
 
-                # follower keeps exact gap
-                bottom.y = top.y + pipe_height + gap
+                # follower keeps exact stored gap
+                bottom.y = top.y + pipe_height + pair_gap
             else:
-                # movement disabled: freeze vertical
-                top.vy = 0.0
-                # keep follower aligned to keep the gap exact
-                bottom.y = top.y + pipe_height + gap
+                # HARD PIN — no recomputation, no drift
+                if not top.frozen:
+                    # capture current resting place so disabling mid-cycle doesn't jump
+                    top.frozen_y = top.y
+                    bottom.frozen_y = bottom.y
+                    top.frozen = bottom.frozen = True
 
-            # scoring (+1 per pair)
+                top.vy = 0.0
+                top.y = top.frozen_y
+                bottom.y = bottom.frozen_y
+
+            # scoring
             if (not getattr(top, "passed", False)) and bird.x > top.x + top.width:
                 score += 1.0
                 try: sfx.play_score_sound()
                 except Exception: pass
-                top.passed = True
-                bottom.passed = True
+                top.passed = bottom.passed = True
 
             # collisions
             if bird.colliderect(top) or bird.colliderect(bottom):
                 game_over = True
-                if audio_initialized:
-                    try: sfx.play_crash()
-                    except Exception: pass
+                try: sfx.play_crash()
+                except Exception: pass
 
             i += 2
 
-            # purge off-screen pairs
-            while len(pipes) >= 2 and pipes[0].x + pipe_width < -pipe_width:
-                del pipes[0:2]
+        # purge off-screen pairs **after** iterating
+        while len(pipes) >= 2 and pipes[0].x + pipe_width < -pipe_width:
+            del pipes[0:2]
 
 
     # Timer for pipe creation
