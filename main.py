@@ -4,7 +4,7 @@ import random
 import asyncio
 from pathlib import Path
 import theme_changer
-from difficulty import difficulty_factor, current_gap
+from difficulty import difficulty_factor, current_gap, vertical_pipe_enabled
 
 # ---- audio wiring (namespace import; no shadowing) ----
 try:
@@ -375,11 +375,9 @@ async def main():
             game_over = True
             try: sfx.play_fall()
             except Exception: pass
-        
-        vertical_pipe_movement = score >= 6
-
+    
         # --- difficulty knobs for chaos flips ---
-        factor = difficulty_factor(score) if vertical_pipe_movement else 0.0
+        factor = difficulty_factor(score)
         max_speed = 0.5 + factor * 1.5    # 0.5 → 2.0
         flip_chance = factor * 0.05       # 0% → 5%
 
@@ -390,38 +388,50 @@ async def main():
         min_top_y = -pipe_height
         max_top_y = (GAME_HEIGHT - base_rect.height) - (pipe_height + gap)
 
-        # Iterate pairs: (top, bottom) = (pipes[i], pipes[i+1])
+        enable_vertical = vertical_pipe_enabled(score)
+
         i = 0
         while i + 1 < len(pipes):
             top = pipes[i]
             bottom = pipes[i + 1]
 
-            # horizontal scroll (both share same x)
-            
+            # horizontal scroll
             top.x += velocity_x
             bottom.x = top.x
 
-            # vertical: top drives
-            top.y += top.vy
-            # clamp & bounce the driver within safe band
-            bounced = False
-            if top.y < min_top_y:
-                top.y = min_top_y
-                bounced = True
-            elif top.y > max_top_y:
-                top.y = max_top_y
-                bounced = True
-            if bounced:
-                top.vy *= -1
+            gap = current_gap(score)
+            min_top_y = -pipe_height
+            max_top_y = (GAME_HEIGHT - base_rect.height) - (pipe_height + gap)
 
-            # occasional chaos flip (driver only)
-            if flip_chance > 0 and random.random() < flip_chance:
-                top.vy = random.choice([-1, 1]) * random.uniform(0.3, max_speed)
+            if enable_vertical:
+                # init vy once per pair when movement turns on
+                if top.vy == 0.0:
+                    top.vy = random.choice([-1, 1]) * random.uniform(0.3, max_speed)
 
-            # follower keeps the gap exactly
-            bottom.y = top.y + pipe_height + gap
+                # vertical move (top drives)
+                top.y += top.vy
 
-            # scoring: +1 per pair when bird has passed the right edge
+                # bounce within safe band
+                if top.y < min_top_y:
+                    top.y = min_top_y
+                    top.vy *= -1
+                elif top.y > max_top_y:
+                    top.y = max_top_y
+                    top.vy *= -1
+
+                # occasional chaos flips ONLY when enabled
+                if flip_chance > 0 and random.random() < flip_chance:
+                    top.vy = random.choice([-1, 1]) * random.uniform(0.3, max_speed)
+
+                # follower keeps exact gap
+                bottom.y = top.y + pipe_height + gap
+            else:
+                # movement disabled: freeze vertical
+                top.vy = 0.0
+                # keep follower aligned to keep the gap exact
+                bottom.y = top.y + pipe_height + gap
+
+            # scoring (+1 per pair)
             if (not getattr(top, "passed", False)) and bird.x > top.x + top.width:
                 score += 1.0
                 try: sfx.play_score_sound()
@@ -432,16 +442,15 @@ async def main():
             # collisions
             if bird.colliderect(top) or bird.colliderect(bottom):
                 game_over = True
-                try: sfx.play_crash()
-                except Exception: pass
+                if audio_initialized:
+                    try: sfx.play_crash()
+                    except Exception: pass
 
-            i += 2  # next pair
+            i += 2
 
-        # purge off-screen pairs
-        # remove from the front while the *first* (top) is fully offscreen
-        while len(pipes) >= 2 and pipes[0].x + pipe_width < -pipe_width:
-            # remove the pair (top & bottom)
-            del pipes[0:2]
+            # purge off-screen pairs
+            while len(pipes) >= 2 and pipes[0].x + pipe_width < -pipe_width:
+                del pipes[0:2]
 
 
     # Timer for pipe creation

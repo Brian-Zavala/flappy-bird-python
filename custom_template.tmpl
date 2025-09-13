@@ -2,73 +2,80 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no" />
   <title>{{ title }}</title>
   <style>
-    html, body {
+    * {
       margin: 0;
       padding: 0;
+      box-sizing: border-box;
+    }
+    
+    html, body {
+      width: 100%;
       height: 100%;
       overflow: hidden;
+      -webkit-user-select: none;
+      -moz-user-select: none;
+      -ms-user-select: none;
+      user-select: none;
     }
+    
     body {
-      display: flex;
-      justify-content: center;
-      align-items: center;
-      background: #70c5ce; /* sky blue fallback */
-    }
-
-    #game-container {
       position: relative;
-      width: 100vw;
-      height: 100vh;
-      max-width: 640px;
-      max-height: 100vh;
-      margin: 0 auto;
-    }
-
-    /* Overlay covers entire container */
-    #custom-title {
-      position: absolute;
-      inset: 0;
-      z-index: 1000;
-      display: flex;
-      justify-content: center;
-      align-items: center;
       background: #70c5ce;
     }
 
-    /* Responsive title image */
-    #title-image {
-      width: auto;
-      height: auto;
-      max-width: 90%;
-      max-height: 70%;
-      object-fit: contain;  /* keep aspect ratio */
-      display: block;
+    /* Full viewport splash screen */
+    #splash {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100vw;
+      height: 100vh;
+      z-index: 9999;
+      cursor: pointer;
+      background: #70c5ce;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      -webkit-tap-highlight-color: transparent;
     }
 
-    /* Start button overlaid in the center */
-    #start-button {
+    /* Fullscreen splash image */
+    #splash-image {
       position: absolute;
-      bottom: 15%;        /* move up from bottom */
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      object-fit: cover; /* Fill entire viewport */
+      pointer-events: none; /* Ensure clicks pass through to splash div */
+    }
+    
+    /* Tap to start text overlay */
+    #tap-text {
+      position: absolute;
+      bottom: 10%;
       left: 50%;
       transform: translateX(-50%);
-      background: #f7dc6f;
-      border: 3px solid #f39c12;
-      border-radius: 10px;
-      padding: 15px 30px;
-      color: #333;
-      font-size: 16px;
-      cursor: pointer;
-      font-family: 'Press Start 2P', monospace;
-      transition: transform 0.2s, background 0.2s;
-      z-index: 1001;
+      color: white;
+      font-family: 'Courier New', monospace;
+      font-size: 24px;
+      text-shadow: 2px 2px 4px rgba(0,0,0,0.5);
+      animation: pulse 2s ease-in-out infinite;
+      z-index: 10;
+      pointer-events: none; /* Ensure clicks pass through */
+      -webkit-user-select: none;
+      user-select: none;
     }
-    #start-button:hover  { background: #f39c12; transform: translateX(-50%) scale(1.05); }
-    #start-button:active { transform: translateX(-50%) scale(0.95); }
+    
+    @keyframes pulse {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0.5; }
+    }
 
-    /* Canvas always visible but behind overlay initially */
+    /* Canvas for the game */
     #canvas {
       display: block;
       width: 100%;
@@ -76,67 +83,202 @@
       image-rendering: pixelated;
       image-rendering: -moz-crisp-edges;
       image-rendering: crisp-edges;
+      outline: none; /* Remove focus outline */
     }
   </style>
 </head>
 <body>
-  <div id="game-container">
-    <div id="custom-title">
-      <img id="title-image" src="assets/game-title.png" alt="Game Title"
-           onerror="this.style.display='none'"/>
-      <button id="start-button" type="button">Press to Start</button>
-    </div>
-    <canvas id="canvas"></canvas>
+  <!-- Splash screen overlay -->
+  <div id="splash">
+    <img id="splash-image" alt="Flappy Bird" />
+    <div id="tap-text">Tap to Start</div>
   </div>
+  
+  <!-- Game canvas with tabindex for focus support -->
+  <canvas id="canvas" tabindex="0"></canvas>
 
   {{ pygbag_scripts }}
 
   <script>
-    // Simple approach: just hide the overlay when button is clicked
-    // The game will already be running in the background
+    // Prevent multiple calls and track state
+    let splashHidden = false;
+    let imageLoaded = false;
     
-    function startGame() {
-      // Hide the title overlay
-      const titleScreen = document.getElementById('custom-title');
-      if (titleScreen) {
-        titleScreen.style.display = 'none';
+    // Handle splash screen removal
+    function hideSplash() {
+      // Prevent multiple calls
+      if (splashHidden) return;
+      splashHidden = true;
+      
+      // Remove splash
+      const splash = document.getElementById('splash');
+      if (splash) {
+        splash.style.display = 'none';
+        // Also remove from DOM after hiding to free memory
+        setTimeout(() => {
+          if (splash.parentNode) {
+            splash.parentNode.removeChild(splash);
+          }
+        }, 500);
       }
       
-      // Send a click event to the canvas to ensure the game responds
+      // Focus canvas and trigger game start
       const canvas = document.getElementById('canvas');
       if (canvas) {
-        // Create and dispatch a click event to the canvas
-        const clickEvent = new MouseEvent('click', {
-          view: window,
-          bubbles: true,
-          cancelable: true,
-          clientX: canvas.width / 2,
-          clientY: canvas.height / 2
-        });
-        canvas.dispatchEvent(clickEvent);
-        
-        // Focus the canvas for keyboard input
+        // Focus canvas for keyboard input
         canvas.focus();
+        
+        // Send multiple events to ensure game starts
+        setTimeout(() => {
+          try {
+            // Send mousedown first
+            const mouseDown = new MouseEvent('mousedown', {
+              view: window,
+              bubbles: true,
+              cancelable: true,
+              clientX: canvas.offsetWidth / 2,
+              clientY: canvas.offsetHeight / 2
+            });
+            canvas.dispatchEvent(mouseDown);
+            
+            // Then mouseup
+            const mouseUp = new MouseEvent('mouseup', {
+              view: window,
+              bubbles: true,
+              cancelable: true,
+              clientX: canvas.offsetWidth / 2,
+              clientY: canvas.offsetHeight / 2
+            });
+            canvas.dispatchEvent(mouseUp);
+            
+            // Finally click
+            const click = new MouseEvent('click', {
+              view: window,
+              bubbles: true,
+              cancelable: true,
+              clientX: canvas.offsetWidth / 2,
+              clientY: canvas.offsetHeight / 2
+            });
+            canvas.dispatchEvent(click);
+          } catch (e) {
+            console.log('Error dispatching events:', e);
+          }
+        }, 200); // Increased delay for game initialization
       }
     }
     
-    // Wait for DOM to be ready
-    document.addEventListener('DOMContentLoaded', function() {
-      const startButton = document.getElementById('start-button');
-      if (startButton) {
-        startButton.addEventListener('click', startGame);
+    // Setup event listeners
+    function setupEventListeners() {
+      const splash = document.getElementById('splash');
+      
+      if (splash) {
+        // Handle both mouse and touch with a unified approach
+        let interactionHandled = false;
+        
+        function handleInteraction(e) {
+          if (interactionHandled) return;
+          interactionHandled = true;
+          
+          if (e.cancelable) {
+            e.preventDefault();
+          }
+          e.stopPropagation();
+          hideSplash();
+        }
+        
+        // Mouse events
+        splash.addEventListener('click', handleInteraction, { passive: false });
+        
+        // Touch events (only on touch devices)
+        if ('ontouchstart' in window) {
+          splash.addEventListener('touchend', handleInteraction, { passive: false });
+        }
       }
       
-      // Also allow starting with keyboard
+      // Keyboard support (any key to start)
       document.addEventListener('keydown', function(e) {
-        const titleScreen = document.getElementById('custom-title');
-        if (titleScreen && titleScreen.style.display !== 'none') {
-          if (e.code === 'Space' || e.code === 'Enter') {
-            e.preventDefault();
-            startGame();
-          }
+        if (!splashHidden) {
+          e.preventDefault();
+          hideSplash();
         }
+      }, { once: true });
+    }
+    
+    // Load splash image with fallback paths
+    function loadSplashImage() {
+      const img = document.getElementById('splash-image');
+      if (!img) return;
+      
+      // Paths to try in order of likelihood
+      const paths = [
+        'assets/game-title.png',
+        './assets/game-title.png',
+        'game-title.png',
+        './game-title.png',
+        '/assets/game-title.png',
+        '../assets/game-title.png'
+      ];
+      
+      let currentPathIndex = 0;
+      let retryCount = 0;
+      const maxRetries = 2;
+      
+      function tryNextPath() {
+        if (currentPathIndex >= paths.length) {
+          if (retryCount < maxRetries) {
+            // Retry all paths once more after a delay (assets might load late)
+            retryCount++;
+            currentPathIndex = 0;
+            setTimeout(tryNextPath, 500);
+            return;
+          }
+          
+          // All paths failed after retries
+          img.style.display = 'none';
+          console.warn('Splash image not found after trying all paths with retries');
+          // Still show splash with blue background
+          return;
+        }
+        
+        const path = paths[currentPathIndex];
+        console.log('Trying to load splash image from:', path);
+        img.src = path;
+        currentPathIndex++;
+      }
+      
+      // Set up error handler
+      img.onerror = function() {
+        console.log('Failed to load:', img.src);
+        tryNextPath();
+      };
+      
+      // Set up success handler
+      img.onload = function() {
+        imageLoaded = true;
+        console.log('Successfully loaded splash image from:', img.src);
+      };
+      
+      // Start loading with first path
+      tryNextPath();
+    }
+    
+    // Initialize when DOM is ready
+    if (document.readyState === 'loading') {
+      document.addEventListener('DOMContentLoaded', function() {
+        setupEventListeners();
+        loadSplashImage();
       });
+    } else {
+      // DOM already loaded
+      setupEventListeners();
+      loadSplashImage();
+    }
+    
+    // Fallback: Also try loading on window load
+    window.addEventListener('load', function() {
+      if (!imageLoaded) {
+        loadSplashImage();
+      }
     });
   </script>
 </body>

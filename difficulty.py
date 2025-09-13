@@ -11,3 +11,11 @@ def current_gap(score: float) -> int:
     factor = difficulty_factor(score)  # 0 → 1
     return int(base_gap - factor * 60)  # 180 → 120
 
+# after updating score, compute whether pipes should move this cycle
+def vertical_pipe_enabled(score: float) -> bool:
+    if score <= 10:
+        return False  # keep still until player reaches 10 points
+    cycle = int(score - 6) // 10   # 0,1,2,3...
+    return (cycle % 2 == 0)        # even → move, odd → stop
+
+
