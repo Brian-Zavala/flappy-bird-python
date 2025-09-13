@@ -54,7 +54,7 @@ jobs:
       - name: Inject splash overlay (post-process index.html)
         run: |
           set -euxo pipefail
-          python - << 'PY'
+          cat > inject_splash.py << 'EOF'
           from pathlib import Path
           p = Path('build/web/index.html')
           if not p.exists():
@@ -72,58 +72,57 @@ jobs:
               head = html[:close+1]
               tail = html[close+1:]
 
-              overlay = '''
-  <!-- Splash Overlay -->
-  <div id="splash-overlay" style="position:fixed;inset:0;background:#70c5ce;display:flex;align-items:center;justify-content:center;z-index:10000;cursor:pointer;transition:opacity .4s ease-out;">
-    <div style="color:white;font-family:monospace;font-size:24px;text-shadow:2px 2px 4px rgba(0,0,0,.5);animation:pulse 2s ease-in-out infinite">Tap to Start</div>
-  </div>
-  <style>@keyframes pulse{0%,100%{opacity:1}50%{opacity:.5}}</style>
-  <script>
-  (function(){
-    var hidden=false;
-    function hide(){ if(hidden) return; hidden=true;
-      var el=document.getElementById('splash-overlay'); if(el){ el.style.opacity='0'; setTimeout(()=>{ el.remove(); },400); }
-      var c=document.getElementById('canvas'); if(c) c.focus();
-    }
-    async function waitForFirstDraw(){
-      const c=document.getElementById('canvas'); if(!c) return false;
-      const ctx=c.getContext && c.getContext('2d'); if(!ctx) return false;
-      const bg=[0x70,0xc5,0xce];
-      for(let i=0;i<100;i++){
-        try{
-          const d=ctx.getImageData(0,0,1,1).data;
-          if(!(d[0]===bg[0]&&d[1]===bg[1]&&d[2]===bg[2])) return true;
-        }catch(e){}
-        await new Promise(r=>setTimeout(r,100));
-      }
-      return false;
-    }
-    function setup(){
-      const s=document.getElementById('splash-overlay'); if(!s) return;
-      let handled=false;
-      async function go(e){
-        if(handled) return; handled=true;
-        if(e && e.cancelable) e.preventDefault();
-        // give runtime a tick to boot, then wait for first draw (or timeout)
-        await new Promise(r=>setTimeout(r,200));
-        await waitForFirstDraw();
-        hide();
-        // forward a click to satisfy audio/gesture policies
-        try{ document.dispatchEvent(new MouseEvent('click',{bubbles:true,cancelable:true})); }catch(_){}
-      }
-      s.addEventListener('click', go, {passive:false});
-      if('ontouchstart' in window) s.addEventListener('touchend', go, {passive:false});
-      document.addEventListener('keydown', (e)=>{ if(!handled){ go(e); } }, {once:true});
-    }
-    if(document.readyState==='loading') document.addEventListener('DOMContentLoaded', setup); else setup();
-  })();
-  </script>
-'''
+              overlay = """<!-- Splash Overlay -->
+          <div id="splash-overlay" style="position:fixed;inset:0;background:#70c5ce;display:flex;align-items:center;justify-content:center;z-index:10000;cursor:pointer;transition:opacity .4s ease-out;">
+            <div style="color:white;font-family:monospace;font-size:24px;text-shadow:2px 2px 4px rgba(0,0,0,.5);animation:pulse 2s ease-in-out infinite">Tap to Start</div>
+          </div>
+          <style>@keyframes pulse{0%,100%{opacity:1}50%{opacity:.5}}</style>
+          <script>
+          (function(){
+            var hidden=false;
+            function hide(){ if(hidden) return; hidden=true;
+              var el=document.getElementById('splash-overlay'); if(el){ el.style.opacity='0'; setTimeout(()=>{ el.remove(); },400); }
+              var c=document.getElementById('canvas'); if(c) c.focus();
+            }
+            async function waitForFirstDraw(){
+              const c=document.getElementById('canvas'); if(!c) return false;
+              const ctx=c.getContext && c.getContext('2d'); if(!ctx) return false;
+              const bg=[0x70,0xc5,0xce];
+              for(let i=0;i<100;i++){
+                try{
+                  const d=ctx.getImageData(0,0,1,1).data;
+                  if(!(d[0]===bg[0]&&d[1]===bg[1]&&d[2]===bg[2])) return true;
+                }catch(e){}
+                await new Promise(r=>setTimeout(r,100));
+              }
+              return false;
+            }
+            function setup(){
+              const s=document.getElementById('splash-overlay'); if(!s) return;
+              let handled=false;
+              async function go(e){
+                if(handled) return; handled=true;
+                if(e && e.cancelable) e.preventDefault();
+                // give runtime a tick to boot, then wait for first draw (or timeout)
+                await new Promise(r=>setTimeout(r,200));
+                await waitForFirstDraw();
+                hide();
+                // forward a click to satisfy audio/gesture policies
+                try{ document.dispatchEvent(new MouseEvent('click',{bubbles:true,cancelable:true})); }catch(_){}
+              }
+              s.addEventListener('click', go, {passive:false});
+              if('ontouchstart' in window) s.addEventListener('touchend', go, {passive:false});
+              document.addEventListener('keydown', (e)=>{ if(!handled){ go(e); } }, {once:true});
+            }
+            if(document.readyState==='loading') document.addEventListener('DOMContentLoaded', setup); else setup();
+          })();
+          </script>"""
               html = head + overlay + tail
 
           p.write_text(html, encoding='utf-8')
           print("✓ Splash overlay injected")
-          PY
+          EOF
+          python inject_splash.py
 
       - name: Copy assets to build/web (optional)
         run: |
