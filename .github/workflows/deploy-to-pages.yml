@@ -26,160 +26,126 @@ jobs:
         with:
           python-version: '3.11'
 
-      - name: Install pygbag
+      - name: Install toolchain (pygbag stable)
         run: |
+          set -euxo pipefail
           python -m pip install --upgrade pip
-          python -m pip install pygbag==0.9.3
-          
+          pip install pygame-ce pygbag==0.9.2
+
+      - name: Clean previous builds & cache
+        run: |
+          set -euxo pipefail
+          rm -rf build web build/web-cache || true
+
       - name: Build with pygbag (default template)
         run: |
-          python -m pygbag --build .
-          
+          set -euxo pipefail
+          # IMPORTANT: pass the folder BEFORE --build (pygbag expects the app arg)
+          python -m pygbag . --build | tee build_default.log
+          test -f build/web/index.html
+          # sanity: not a tiny file
+          [ $(wc -c < build/web/index.html) -ge 5000 ]
+
       - name: List build directory
         run: |
           echo "Contents of build/web:"
-          ls -la build/web/ || echo "build/web not found"
-          
-      - name: Post-process index.html with splash overlay
+          ls -la build/web/
+
+      - name: Inject splash overlay (post-process index.html)
         run: |
-          cat > post_process.py << 'EOF'
-          import re
-          
-          # Read the generated index.html
-          with open('build/web/index.html', 'r') as f:
-              content = f.read()
-          
-          # Define the splash overlay HTML
-          splash_html = '''
-          <!-- Splash Overlay -->
-          <div id="splash-overlay" style="
-              position: fixed;
-              top: 0;
-              left: 0;
-              width: 100vw;
-              height: 100vh;
-              background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-              display: flex;
-              align-items: center;
-              justify-content: center;
-              z-index: 10000;
-              cursor: pointer;
-              transition: opacity 0.5s ease-out;
-          ">
-              <img src="splash.png" alt="Flappy Bird" style="
-                  max-width: 90%;
-                  max-height: 90%;
-                  object-fit: contain;
-                  filter: drop-shadow(0 10px 20px rgba(0,0,0,0.3));
-              ">
-          </div>
-          
-          <script>
-          (function() {
-              const splashOverlay = document.getElementById('splash-overlay');
-              let gameStarted = false;
-              
-              async function waitForFirstFrame() {
-                  const canvas = document.getElementById('canvas');
-                  if (!canvas) return false;
-                  
-                  const ctx = canvas.getContext('2d');
-                  const bgColor = [0x70, 0xc5, 0xce]; // Light blue background
-                  
-                  // Check up to 100 times (10 seconds)
-                  for (let i = 0; i < 100; i++) {
-                      try {
-                          const pixel = ctx.getImageData(0, 0, 1, 1).data;
-                          // If pixel is NOT the background color, game has drawn
-                          if (!(pixel[0] === bgColor[0] && pixel[1] === bgColor[1] && pixel[2] === bgColor[2])) {
-                              return true;
-                          }
-                      } catch (e) {
-                          // Might fail if canvas not ready
-                      }
-                      await new Promise(r => setTimeout(r, 100));
-                  }
-                  return false;
-              }
-              
-              splashOverlay.addEventListener('click', async function(e) {
-                  if (gameStarted) return;
-                  gameStarted = true;
-                  
-                  console.log('Splash clicked, starting game...');
-                  
-                  // Hide splash with fade
-                  splashOverlay.style.opacity = '0';
-                  
-                  // Wait for first frame
-                  const frameDetected = await waitForFirstFrame();
-                  
-                  if (frameDetected) {
-                      console.log('First frame detected!');
-                  } else {
-                      console.log('Timeout waiting for first frame');
-                  }
-                  
-                  // Remove splash after fade
-                  setTimeout(() => {
-                      splashOverlay.style.display = 'none';
-                  }, 500);
-                  
-                  // Forward click to document for audio init
-                  document.dispatchEvent(new MouseEvent('click', {
-                      bubbles: true,
-                      cancelable: true,
-                      view: window
-                  }));
-              });
-          })();
-          </script>
-          '''
-          
-          # Insert splash HTML right after <body>
-          content = re.sub(
-              r'(<body[^>]*>)',
-              r'\1\n' + splash_html,
-              content,
-              count=1
-          )
-          
-          # Write the modified content back
-          with open('build/web/index.html', 'w') as f:
-              f.write(content)
-          
-          print("✓ Splash overlay injected successfully")
-          EOF
-          
-          python post_process.py
-          
-      - name: Copy splash image
+          set -euxo pipefail
+          python - << 'PY'
+          from pathlib import Path
+          p = Path('build/web/index.html')
+          if not p.exists():
+              raise SystemExit("index.html not found; build step failed.")
+
+          html = p.read_text(encoding='utf-8')
+          if 'id="splash-overlay"' not in html:
+              # add overlay right after <body>
+              insert_after = html.find('<body')
+              if insert_after == -1:
+                  raise SystemExit("<body> not found in built html")
+              close = html.find('>', insert_after)
+              if close == -1:
+                  raise SystemExit("malformed <body>")
+              head = html[:close+1]
+              tail = html[close+1:]
+
+              overlay = '''
+  <!-- Splash Overlay -->
+  <div id="splash-overlay" style="position:fixed;inset:0;background:#70c5ce;display:flex;align-items:center;justify-content:center;z-index:10000;cursor:pointer;transition:opacity .4s ease-out;">
+    <div style="color:white;font-family:monospace;font-size:24px;text-shadow:2px 2px 4px rgba(0,0,0,.5);animation:pulse 2s ease-in-out infinite">Tap to Start</div>
+  </div>
+  <style>@keyframes pulse{0%,100%{opacity:1}50%{opacity:.5}}</style>
+  <script>
+  (function(){
+    var hidden=false;
+    function hide(){ if(hidden) return; hidden=true;
+      var el=document.getElementById('splash-overlay'); if(el){ el.style.opacity='0'; setTimeout(()=>{ el.remove(); },400); }
+      var c=document.getElementById('canvas'); if(c) c.focus();
+    }
+    async function waitForFirstDraw(){
+      const c=document.getElementById('canvas'); if(!c) return false;
+      const ctx=c.getContext && c.getContext('2d'); if(!ctx) return false;
+      const bg=[0x70,0xc5,0xce];
+      for(let i=0;i<100;i++){
+        try{
+          const d=ctx.getImageData(0,0,1,1).data;
+          if(!(d[0]===bg[0]&&d[1]===bg[1]&&d[2]===bg[2])) return true;
+        }catch(e){}
+        await new Promise(r=>setTimeout(r,100));
+      }
+      return false;
+    }
+    function setup(){
+      const s=document.getElementById('splash-overlay'); if(!s) return;
+      let handled=false;
+      async function go(e){
+        if(handled) return; handled=true;
+        if(e && e.cancelable) e.preventDefault();
+        // give runtime a tick to boot, then wait for first draw (or timeout)
+        await new Promise(r=>setTimeout(r,200));
+        await waitForFirstDraw();
+        hide();
+        // forward a click to satisfy audio/gesture policies
+        try{ document.dispatchEvent(new MouseEvent('click',{bubbles:true,cancelable:true})); }catch(_){}
+      }
+      s.addEventListener('click', go, {passive:false});
+      if('ontouchstart' in window) s.addEventListener('touchend', go, {passive:false});
+      document.addEventListener('keydown', (e)=>{ if(!handled){ go(e); } }, {once:true});
+    }
+    if(document.readyState==='loading') document.addEventListener('DOMContentLoaded', setup); else setup();
+  })();
+  </script>
+'''
+              html = head + overlay + tail
+
+          p.write_text(html, encoding='utf-8')
+          print("✓ Splash overlay injected")
+          PY
+
+      - name: Copy assets to build/web (optional)
         run: |
-          cp splash.png build/web/splash.png || echo "Warning: splash.png not found"
-          
-      - name: Copy assets to build/web
-        run: |
-          # Create directories if they don't exist
+          set -euxo pipefail
           mkdir -p build/web/assets build/web/sounds
-          
-          # Copy assets
           [ -d assets ] && cp -rv assets/* build/web/assets/ || true
           [ -d sounds ] && cp -rv sounds/* build/web/sounds/ || true
-          
-          # Verify critical files
-          echo "=== Verify critical files ==="
-          test -f build/web/assets/game-title.png && echo "✓ Title image" || echo "✗ Title image missing"
-          test -f build/web/assets/PressStart2P.ttf && echo "✓ Font" || echo "✗ Font missing"
-          test -d build/web/sounds && echo "✓ Sounds folder" || echo "✗ Sounds folder missing"
-          
-      - name: Setup Pages
-        uses: actions/configure-pages@v5
-        
+
+      - name: Configure Pages
+        uses: actions/configure-pages@v4
+
       - name: Upload artifact
         uses: actions/upload-pages-artifact@v3
         with:
-          path: 'build/web'
-          
-      - name: Deploy to GitHub Pages
-        id: deployment
+          path: build/web
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - id: deployment
         uses: actions/deploy-pages@v4
