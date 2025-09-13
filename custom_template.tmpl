@@ -9,21 +9,25 @@
       margin: 0;
       padding: 0;
       height: 100%;
+      overflow: hidden;
     }
     body {
       display: flex;
       justify-content: center;
       align-items: center;
-      background: #000; /* fallback */
+      background: #70c5ce; /* sky blue fallback */
     }
 
     #game-container {
       position: relative;
-      width: 100%;
-      height: 100%;
+      width: 100vw;
+      height: 100vh;
+      max-width: 640px;
+      max-height: 100vh;
+      margin: 0 auto;
     }
 
-    /* Overlay covers entire screen */
+    /* Overlay covers entire container */
     #custom-title {
       position: absolute;
       inset: 0;
@@ -31,13 +35,16 @@
       display: flex;
       justify-content: center;
       align-items: center;
+      background: #70c5ce;
     }
 
-    /* Fullscreen title image */
+    /* Responsive title image */
     #title-image {
-      width: 100%;
-      height: 100%;
-      object-fit: cover;  /* cover whole viewport */
+      width: auto;
+      height: auto;
+      max-width: 90%;
+      max-height: 70%;
+      object-fit: contain;  /* keep aspect ratio */
       display: block;
     }
 
@@ -56,15 +63,22 @@
       cursor: pointer;
       font-family: 'Press Start 2P', monospace;
       transition: transform 0.2s, background 0.2s;
+      z-index: 1001;
     }
     #start-button:hover  { background: #f39c12; transform: translateX(-50%) scale(1.05); }
     #start-button:active { transform: translateX(-50%) scale(0.95); }
 
-    canvas.hidden { display: none !important; }
-    canvas {
+    /* Canvas initially hidden */
+    #canvas {
       display: block;
       width: 100%;
       height: 100%;
+      image-rendering: pixelated;
+      image-rendering: -moz-crisp-edges;
+      image-rendering: crisp-edges;
+    }
+    #canvas.hidden { 
+      display: none !important; 
     }
   </style>
 </head>
@@ -81,14 +95,48 @@
   {{ pygbag_scripts }}
 
   <script>
+    // Wait for Module to be ready
+    let gameStarted = false;
+    
     function startGame() {
-      document.getElementById('custom-title').style.display = 'none';
-      document.getElementById('canvas').classList.remove('hidden');
-      if (window.Module && Module.pygbag && typeof Module.pygbag.run === 'function') {
-        Module.pygbag.run();
+      if (gameStarted) return;
+      gameStarted = true;
+      
+      // Hide title screen
+      const titleScreen = document.getElementById('custom-title');
+      titleScreen.style.display = 'none';
+      
+      // Show canvas
+      const canvas = document.getElementById('canvas');
+      canvas.classList.remove('hidden');
+      
+      // Force canvas to be visible
+      canvas.style.display = 'block';
+      
+      // Start the game - check if Module is ready
+      if (window.Module) {
+        // Trigger a resize event to ensure canvas is properly sized
+        window.dispatchEvent(new Event('resize'));
+        
+        // Start the game if the run function exists
+        if (Module.pygbag && typeof Module.pygbag.run === 'function') {
+          Module.pygbag.run();
+        } else if (Module.resume) {
+          // Alternative: try to resume if game is paused
+          Module.resume();
+        }
       }
     }
+    
+    // Add event listener to start button
     document.getElementById('start-button').addEventListener('click', startGame);
+    
+    // Also allow starting with keyboard
+    document.addEventListener('keydown', function(e) {
+      if (!gameStarted && (e.code === 'Space' || e.code === 'Enter')) {
+        startGame();
+      }
+    });
   </script>
 </body>
 </html>

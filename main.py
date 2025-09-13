@@ -62,11 +62,60 @@ last_time = pygame.time.get_ticks()
 next_pair_id = 0  # unique id for each pipe pair
 
 class Bird(pygame.Rect):
-    def __init__(self, img):
+    def __init__(self, img_middle_flap):
         pygame.Rect.__init__(self, bird_x, bird_y, bird_width, bird_height)
-        self.img = img
+        # animation frames and state
+        self.frames = []
+        self.frame_index = 1
+        self.img = img_middle_flap
         self.pitch = 0.0  # degrees, +up / -down
 
+        # simple aimation timer
+        self.frame_ms = 90
+        self._accum_ms = 0
+
+        # when player flaps, show "up" frame for a bit
+        self.flap_lock_ms = 120
+        self._flap_timer = 0
+
+    def set_frames(self, up, mid, down):
+        self.frames = [down, mid, up]
+        self.frame_index = 1
+        self.img = self.frames[self.frame_index]
+
+    def on_flap(self):
+        # Call rught after velocity_y is set (velocity_y = -6)
+        self._flap_timer = self.flap_lock_ms
+        self.frame_index = 2  # show "up" frame immediately
+        self.img =self.frames[self.frame_index]
+
+    def update(self, dt_ms: int, velocity_y: float):
+        """Advance animation. dt_ms is milliseconds since last frame."""
+        # Countdown flap lock if active
+        if self._flap_timer > 0:
+            self._flap_timer -= dt_ms
+            # keep showing "up" frame while locked
+            self.frame_index = 2
+            self.img = self.frames[self.frame_index]
+            return
+
+        # Otherwise, run a simple 3-frame cycle (down -> mid -> up -> mid -> ...)
+        self._accum_ms += dt_ms
+        if self._accum_ms >= self.frame_ms:
+            self._accum_ms = 0
+            # pattern: 0,1,2,1,0,1,2,1,...
+            if self.frame_index == 0:        # down -> mid
+                self.frame_index = 1
+            elif self.frame_index == 1:      # mid -> up
+                self.frame_index = 2
+            else:                             # up -> mid
+                self.frame_index = 1
+            self.img = self.frames[self.frame_index]
+
+        # (Optional) bias the frame by velocity for extra feedback:
+        if velocity_y < -2: self.frame_index = 2  # going up
+        elif velocity_y > 3: self.frame_index = 0 # falling
+        self.img = self.frames[self.frame_index]
 
 class Pipe(pygame.Rect):
     def __init__(self, img):
@@ -168,6 +217,7 @@ async def main():
 
     # Game state
     bird = Bird(bird_mid_image)
+    bird.set_frames(bird_down_image, bird_mid_image, bird_up_image)
     pipes = []
     velocity_x = -2
     velocity_y = 0
@@ -418,6 +468,7 @@ async def main():
                     
                     if not game_over:
                         velocity_y = -6
+                        bird.on_flap()
                         # instant nose-up bias
                         bird.pitch = max(bird.pitch, 0.0)
                         if audio_initialized:
@@ -489,6 +540,8 @@ async def main():
             bird.pitch += (target_pitch - bird.pitch) * blend
             # ---------------------------------------------
             
+            bird.update(int(dt * 1000), velocity_y)
+
             # Check if we should start a new transition based on current score
             theme_changer.maybe_start_theme_transition(now, score)
             
