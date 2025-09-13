@@ -118,7 +118,7 @@ class Bird(pygame.Rect):
         self.img = self.frames[self.frame_index]
 
 class Pipe(pygame.Rect):
-    def __init__(self, img):
+    def __init__(self, img):        
         pygame.Rect.__init__(self, pipe_x, pipe_y, pipe_width, pipe_height)
         self.img = img
         self.passed = False

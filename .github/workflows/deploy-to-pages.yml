@@ -2,7 +2,7 @@ name: Deploy to GitHub Pages
 
 on:
   push:
-    branches: [ main ]
+    branches: [main]
   workflow_dispatch:
 
 permissions:
@@ -17,6 +17,7 @@ concurrency:
 jobs:
   build:
     runs-on: ubuntu-latest
+
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -24,7 +25,7 @@ jobs:
       - name: Setup Python
         uses: actions/setup-python@v5
         with:
-          python-version: '3.11'
+          python-version: "3.11"
 
       - name: Install toolchain (pygbag stable)
         run: |
@@ -37,14 +38,13 @@ jobs:
           set -euxo pipefail
           rm -rf build web build/web-cache || true
 
-      - name: Build with pygbag (default template)
+      - name: Build with pygbag (default template) # ← correct flag order
         run: |
           set -euxo pipefail
-          # IMPORTANT: pass the folder BEFORE --build (pygbag expects the app arg)
-          python -m pygbag . --build | tee build_default.log
+          python -m pygbag --build .
           test -f build/web/index.html
-          # sanity: not a tiny file
-          [ $(wc -c < build/web/index.html) -ge 5000 ]
+          # sanity: ensure the file isn't tiny
+          [ "$(wc -c < build/web/index.html)" -ge 5000 ]
 
       - name: List build directory
         run: |
@@ -54,23 +54,20 @@ jobs:
       - name: Inject splash overlay (post-process index.html)
         run: |
           set -euxo pipefail
-          cat > inject_splash.py << 'EOF'
+          python - << 'PY'
           from pathlib import Path
           p = Path('build/web/index.html')
           if not p.exists():
               raise SystemExit("index.html not found; build step failed.")
-
           html = p.read_text(encoding='utf-8')
+
           if 'id="splash-overlay"' not in html:
-              # add overlay right after <body>
-              insert_after = html.find('<body')
-              if insert_after == -1:
-                  raise SystemExit("<body> not found in built html")
-              close = html.find('>', insert_after)
-              if close == -1:
-                  raise SystemExit("malformed <body>")
-              head = html[:close+1]
-              tail = html[close+1:]
+              # insert right after <body ...>
+              i = html.find('<body')
+              if i == -1: raise SystemExit("<body> not found in built html")
+              j = html.find('>', i)
+              if j == -1: raise SystemExit("malformed <body> tag")
+              head, tail = html[:j+1], html[j+1:]
 
               overlay = """<!-- Splash Overlay -->
           <div id="splash-overlay" style="position:fixed;inset:0;background:#70c5ce;display:flex;align-items:center;justify-content:center;z-index:10000;cursor:pointer;transition:opacity .4s ease-out;">
@@ -121,8 +118,7 @@ jobs:
 
           p.write_text(html, encoding='utf-8')
           print("✓ Splash overlay injected")
-          EOF
-          python inject_splash.py
+          PY
 
       - name: Copy assets to build/web (optional)
         run: |
