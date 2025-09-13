@@ -1,103 +1,94 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>{{ title }}</title>
-    <style>
-        body {
-            margin: 0;
-            padding: 0;
-            background: linear-gradient(180deg, #70c5ce 0%, #91d7e3 100%);
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            min-height: 100vh;
-            font-family: 'Press Start 2P', monospace;
-        }
-        
-        #game-container {
-            position: relative;
-            text-align: center;
-        }
-        
-        #custom-title {
-            position: absolute;
-            top: 50%;
-            left: 50%;
-            transform: translate(-50%, -50%);
-            z-index: 1000;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            gap: 30px;
-        }
-        
-        #title-image {
-            max-width: 300px;
-            animation: float 2s ease-in-out infinite;
-        }
-        
-        @keyframes float {
-            0%, 100% { transform: translateY(0); }
-            50% { transform: translateY(-10px); }
-        }
-        
-        #start-button {
-            background: #f7dc6f;
-            border: 3px solid #f39c12;
-            border-radius: 10px;
-            padding: 15px 30px;
-            color: #333;
-            font-size: 16px;
-            cursor: pointer;
-            transition: all 0.3s;
-            font-family: inherit;
-        }
-        
-        #start-button:hover {
-            background: #f39c12;
-            transform: scale(1.05);
-        }
-        
-        #start-button:active {
-            transform: scale(0.95);
-        }
-        
-        canvas {
-            display: block;
-            border: 2px solid #333;
-            box-shadow: 0 0 20px rgba(0,0,0,0.3);
-        }
-        
-        .hidden {
-            display: none !important;
-        }
-    </style>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>{{ title }}</title>
+  <style>
+    html, body {
+      margin: 0;
+      padding: 0;
+      height: 100%;
+    }
+    body {
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      background: #000; /* fallback */
+    }
+
+    #game-container {
+      position: relative;
+      width: 100%;
+      height: 100%;
+    }
+
+    /* Overlay covers entire screen */
+    #custom-title {
+      position: absolute;
+      inset: 0;
+      z-index: 1000;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+    }
+
+    /* Fullscreen title image */
+    #title-image {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;  /* cover whole viewport */
+      display: block;
+    }
+
+    /* Start button overlaid in the center */
+    #start-button {
+      position: absolute;
+      bottom: 15%;        /* move up from bottom */
+      left: 50%;
+      transform: translateX(-50%);
+      background: #f7dc6f;
+      border: 3px solid #f39c12;
+      border-radius: 10px;
+      padding: 15px 30px;
+      color: #333;
+      font-size: 16px;
+      cursor: pointer;
+      font-family: 'Press Start 2P', monospace;
+      transition: transform 0.2s, background 0.2s;
+    }
+    #start-button:hover  { background: #f39c12; transform: translateX(-50%) scale(1.05); }
+    #start-button:active { transform: translateX(-50%) scale(0.95); }
+
+    canvas.hidden { display: none !important; }
+    canvas {
+      display: block;
+      width: 100%;
+      height: 100%;
+    }
+  </style>
 </head>
 <body>
-    <div id="game-container">
-        <div id="custom-title">
-            <!-- Custom title image - replace src with your image path -->
-            <img id="title-image" src="assets/game_title.png" alt="Game Title" onerror="this.style.display='none'">
-            <button id="start-button" onclick="startGame()">Press to Start</button>
-        </div>
-        <canvas id="canvas" class="hidden"></canvas>
+  <div id="game-container">
+    <div id="custom-title">
+      <img id="title-image" src="assets/game-title.png" alt="Game Title"
+           onerror="this.style.display='none'"/>
+      <button id="start-button" type="button">Press to Start</button>
     </div>
+    <canvas id="canvas" class="hidden"></canvas>
+  </div>
 
-    <script>
-        function startGame() {
-            document.getElementById('custom-title').style.display = 'none';
-            document.getElementById('canvas').classList.remove('hidden');
-            
-            // Initialize pygbag runtime
-            if (typeof Module !== 'undefined' && Module.pygbag) {
-                Module.pygbag.run();
-            }
-        }
-        
-        // Pygbag will inject its scripts here
-        {{ pygbag_scripts }}
-    </script>
+  {{ pygbag_scripts }}
+
+  <script>
+    function startGame() {
+      document.getElementById('custom-title').style.display = 'none';
+      document.getElementById('canvas').classList.remove('hidden');
+      if (window.Module && Module.pygbag && typeof Module.pygbag.run === 'function') {
+        Module.pygbag.run();
+      }
+    }
+    document.getElementById('start-button').addEventListener('click', startGame);
+  </script>
 </body>
 </html>

@@ -145,8 +145,14 @@ async def main():
     base_image = pygame.transform.scale(base_image, (GAME_WIDTH, pipe_height // 8))
     base_rect = base_image.get_rect(topleft=(0, GAME_HEIGHT - base_image.get_height()))
 
-    bird_image = load_image_safe(ASSETS / "redbird-midflap.png", True)
-    bird_image = pygame.transform.scale(bird_image, (bird_width, bird_height))
+    bird_up_image = load_image_safe(ASSETS / "redbird-upflap.png", True)
+    bird_up_image = pygame.transform.scale(bird_up_image, (bird_width, bird_height
+
+    bird_mid_image= load_image_safe(ASSETS / "redbird-midflap.png", True)
+    bird_mid_image = pygame.transform.scale(bird_image, (bird_width, bird_height))
+
+    bird_down_image = load_image_safe(ASSETS / "redbird-downflap.png", True)
+    bird_down_image = pygame.transform.scale(bird_down_image, (bird_width, bird_height))
 
     top_pipe_image = load_image_safe(ASSETS / "toppipe.png", True)
     top_pipe_image = pygame.transform.scale(top_pipe_image, (pipe_width, pipe_height))
