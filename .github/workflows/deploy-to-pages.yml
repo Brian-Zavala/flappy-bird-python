@@ -31,8 +31,8 @@ jobs:
       - name: Build with pygbag using custom template
         run: |
           rm -rf build web || true
-          python -m pygbag . --build --template ./custom_template.tmpl
-          # Build the folder, not just the main.py file
+          python -m pygbag --build --template custom_template.tmpl .
+          # Build the current directory with custom template
 
       - name: Verify pygbag injected scripts
         run: |
