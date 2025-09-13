@@ -146,10 +146,10 @@ async def main():
     base_rect = base_image.get_rect(topleft=(0, GAME_HEIGHT - base_image.get_height()))
 
     bird_up_image = load_image_safe(ASSETS / "redbird-upflap.png", True)
-    bird_up_image = pygame.transform.scale(bird_up_image, (bird_width, bird_height
+    bird_up_image = pygame.transform.scale(bird_up_image, (bird_width, bird_height))
 
     bird_mid_image= load_image_safe(ASSETS / "redbird-midflap.png", True)
-    bird_mid_image = pygame.transform.scale(bird_image, (bird_width, bird_height))
+    bird_mid_image = pygame.transform.scale(bird_mid_image, (bird_width, bird_height))
 
     bird_down_image = load_image_safe(ASSETS / "redbird-downflap.png", True)
     bird_down_image = pygame.transform.scale(bird_down_image, (bird_width, bird_height))
