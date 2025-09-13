@@ -38,8 +38,8 @@ jobs:
           # Clean previous artifacts
           rm -rf build web || true
 
-          # Build the WHOLE folder so pygbag finds main.py automatically
-          python -m pygbag . --build --template ./custom_template.tmpl | tee build_custom.log
+          # Build with custom template - folder must be LAST argument
+          python -m pygbag --build --template custom_template.tmpl . | tee build_custom.log
 
           # Must exist
           test -f build/web/index.html
@@ -63,7 +63,7 @@ jobs:
           set -euxo pipefail
           echo "Custom template build failed — trying default pygbag template"
           rm -rf build web || true
-          python -m pygbag . --build | tee build_default.log
+          python -m pygbag --build . | tee build_default.log
           test -f build/web/index.html
           ls -lah build/web
           test -f build/web/main.js
