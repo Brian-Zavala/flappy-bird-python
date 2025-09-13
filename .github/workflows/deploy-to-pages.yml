@@ -1,8 +1,8 @@
-name: Build & Deploy (pygbag → GitHub Pages)
+name: Deploy to GitHub Pages
 
 on:
   push:
-    branches: [main, master]
+    branches: [ main ]
   workflow_dispatch:
 
 permissions:
@@ -18,80 +18,147 @@ jobs:
   build:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - name: Checkout
+        uses: actions/checkout@v4
 
-      - uses: actions/setup-python@v5
+      - name: Setup Python
+        uses: actions/setup-python@v5
         with:
-          python-version: "3.11"
+          python-version: '3.11'
 
-      - name: Install dependencies
+      - name: Install pygbag
         run: |
-          python -V
-          pip install --upgrade pip
-          pip install pygame-ce pygbag
-
-      - name: Build with pygbag (custom template)
-        id: build_custom
-        continue-on-error: true   # we'll fall back if this fails
-        run: |
-          set -euxo pipefail
-          # Clean previous artifacts
-          rm -rf build web || true
-
-          # Build with custom template - folder must be LAST argument
-          python -m pygbag --build --template custom_template.tmpl . | tee build_custom.log
-
-          # Must exist
-          test -f build/web/index.html
-
-          # Confirm template injection happened
-          if grep -Fq "{{ pygbag_scripts }}" build/web/index.html; then
-            echo "ERROR: Template placeholder still present. Injection failed."
-            exit 2
-          fi
-
-          # Basic runtime artifacts
-          echo "=== Checking runtime files ==="
-          ls -lah build/web
-          test -f build/web/main.js
-          test -f build/web/main.data
-          echo "✓ Build successful with custom template"
-
-      - name: Fallback build (default template)
-        if: steps.build_custom.outcome != 'success'
-        run: |
-          set -euxo pipefail
-          echo "Custom template build failed — trying default pygbag template"
-          rm -rf build web || true
-          python -m pygbag --build . | tee build_default.log
-          test -f build/web/index.html
-          ls -lah build/web
-          test -f build/web/main.js
-          test -f build/web/main.data
-          echo "✓ Build successful with default template"
-
-      - name: Show first 120 lines of built index
-        run: |
-          echo "=== First 120 lines of index.html ==="
-          sed -n '1,120p' build/web/index.html || true
-          echo "=== End of preview ==="
-
-      - name: Upload build logs (always)
-        if: always()
-        uses: actions/upload-artifact@v4
-        with:
-          name: pygbag-build-logs
-          path: |
-            build_custom.log
-            build_default.log
-            build/web/index.html
-          if-no-files-found: ignore
-
-      - name: Ensure assets are in build/web
-        run: |
-          set -euxo pipefail
-          echo "=== Copying assets to build/web ==="
+          python -m pip install --upgrade pip
+          python -m pip install pygbag==0.9.3
           
+      - name: Build with pygbag (default template)
+        run: |
+          python -m pygbag --build .
+          
+      - name: List build directory
+        run: |
+          echo "Contents of build/web:"
+          ls -la build/web/ || echo "build/web not found"
+          
+      - name: Post-process index.html with splash overlay
+        run: |
+          cat > post_process.py << 'EOF'
+          import re
+          
+          # Read the generated index.html
+          with open('build/web/index.html', 'r') as f:
+              content = f.read()
+          
+          # Define the splash overlay HTML
+          splash_html = '''
+          <!-- Splash Overlay -->
+          <div id="splash-overlay" style="
+              position: fixed;
+              top: 0;
+              left: 0;
+              width: 100vw;
+              height: 100vh;
+              background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+              display: flex;
+              align-items: center;
+              justify-content: center;
+              z-index: 10000;
+              cursor: pointer;
+              transition: opacity 0.5s ease-out;
+          ">
+              <img src="splash.png" alt="Flappy Bird" style="
+                  max-width: 90%;
+                  max-height: 90%;
+                  object-fit: contain;
+                  filter: drop-shadow(0 10px 20px rgba(0,0,0,0.3));
+              ">
+          </div>
+          
+          <script>
+          (function() {
+              const splashOverlay = document.getElementById('splash-overlay');
+              let gameStarted = false;
+              
+              async function waitForFirstFrame() {
+                  const canvas = document.getElementById('canvas');
+                  if (!canvas) return false;
+                  
+                  const ctx = canvas.getContext('2d');
+                  const bgColor = [0x70, 0xc5, 0xce]; // Light blue background
+                  
+                  // Check up to 100 times (10 seconds)
+                  for (let i = 0; i < 100; i++) {
+                      try {
+                          const pixel = ctx.getImageData(0, 0, 1, 1).data;
+                          // If pixel is NOT the background color, game has drawn
+                          if (!(pixel[0] === bgColor[0] && pixel[1] === bgColor[1] && pixel[2] === bgColor[2])) {
+                              return true;
+                          }
+                      } catch (e) {
+                          // Might fail if canvas not ready
+                      }
+                      await new Promise(r => setTimeout(r, 100));
+                  }
+                  return false;
+              }
+              
+              splashOverlay.addEventListener('click', async function(e) {
+                  if (gameStarted) return;
+                  gameStarted = true;
+                  
+                  console.log('Splash clicked, starting game...');
+                  
+                  // Hide splash with fade
+                  splashOverlay.style.opacity = '0';
+                  
+                  // Wait for first frame
+                  const frameDetected = await waitForFirstFrame();
+                  
+                  if (frameDetected) {
+                      console.log('First frame detected!');
+                  } else {
+                      console.log('Timeout waiting for first frame');
+                  }
+                  
+                  // Remove splash after fade
+                  setTimeout(() => {
+                      splashOverlay.style.display = 'none';
+                  }, 500);
+                  
+                  // Forward click to document for audio init
+                  document.dispatchEvent(new MouseEvent('click', {
+                      bubbles: true,
+                      cancelable: true,
+                      view: window
+                  }));
+              });
+          })();
+          </script>
+          '''
+          
+          # Insert splash HTML right after <body>
+          content = re.sub(
+              r'(<body[^>]*>)',
+              r'\1\n' + splash_html,
+              content,
+              count=1
+          )
+          
+          # Write the modified content back
+          with open('build/web/index.html', 'w') as f:
+              f.write(content)
+          
+          print("✓ Splash overlay injected successfully")
+          EOF
+          
+          python post_process.py
+          
+      - name: Copy splash image
+        run: |
+          cp splash.png build/web/splash.png || echo "Warning: splash.png not found"
+          
+      - name: Copy assets to build/web
+        run: |
           # Create directories if they don't exist
           mkdir -p build/web/assets build/web/sounds
           
@@ -99,29 +166,20 @@ jobs:
           [ -d assets ] && cp -rv assets/* build/web/assets/ || true
           [ -d sounds ] && cp -rv sounds/* build/web/sounds/ || true
           
-          # Also copy sound_effects.py if it exists
-          [ -f sound_effects.py ] && cp -v sound_effects.py build/web/ || true
-          
-          echo "=== Final build/web contents ==="
-          find build/web -maxdepth 2 -type f | sort
-          
+          # Verify critical files
           echo "=== Verify critical files ==="
           test -f build/web/assets/game-title.png && echo "✓ Title image" || echo "✗ Title image missing"
           test -f build/web/assets/PressStart2P.ttf && echo "✓ Font" || echo "✗ Font missing"
           test -d build/web/sounds && echo "✓ Sounds folder" || echo "✗ Sounds folder missing"
-
-      - uses: actions/configure-pages@v4
-
-      - uses: actions/upload-pages-artifact@v3
+          
+      - name: Setup Pages
+        uses: actions/configure-pages@v5
+        
+      - name: Upload artifact
+        uses: actions/upload-pages-artifact@v3
         with:
-          path: build/web
-
-  deploy:
-    needs: build
-    runs-on: ubuntu-latest
-    environment:
-      name: github-pages
-      url: ${{ steps.deployment.outputs.page_url }}
-    steps:
-      - id: deployment
+          path: 'build/web'
+          
+      - name: Deploy to GitHub Pages
+        id: deployment
         uses: actions/deploy-pages@v4
