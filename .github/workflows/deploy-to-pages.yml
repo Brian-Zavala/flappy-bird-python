@@ -71,9 +71,9 @@ jobs:
 
               overlay = """<!-- Splash Overlay -->
           <div id="splash-overlay" style="position:fixed;inset:0;background:#70c5ce;display:flex;align-items:center;justify-content:center;z-index:10000;cursor:pointer;transition:opacity .4s ease-out;">
-            <div style="color:white;font-family:monospace;font-size:24px;text-shadow:2px 2px 4px rgba(0,0,0,.5);animation:pulse 2s ease-in-out infinite">Tap to Start</div>
+            <img src="assets/game-title.png" style="max-width:80%;max-height:80%;object-fit:contain;image-rendering:pixelated;animation:pulse 2s ease-in-out infinite" alt="Flappy Bird">
           </div>
-          <style>@keyframes pulse{0%,100%{opacity:1}50%{opacity:.5}}</style>
+          <style>@keyframes pulse{0%,100%{transform:scale(1)}50%{transform:scale(1.05)}}</style>
           <script>
           (function(){
             var hidden=false;
