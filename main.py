@@ -167,7 +167,7 @@ async def main():
     gameover_image = pygame.transform.scale(gameover_image, (192, 42))
 
     # Game state
-    bird = Bird(bird_image)
+    bird = Bird(bird_mid_image)
     pipes = []
     velocity_x = -2
     velocity_y = 0
