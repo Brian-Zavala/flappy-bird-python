@@ -4,6 +4,7 @@ import random
 import asyncio
 from pathlib import Path
 import theme_changer
+from difficulty import difficulty_factor, current_gap
 
 # ---- audio wiring (namespace import; no shadowing) ----
 try:
@@ -36,9 +37,6 @@ PITCH_LERP_PER_SEC  = 12.0    # smoothing speed (higher = snappier)
 
 
 
-# simple dt timer
-last_time = pygame.time.get_ticks()
-
 
 # Check if running in web browser
 IS_WEB = sys.platform == "emscripten"
@@ -58,6 +56,10 @@ pipe_y = 0
 pipe_width = 64
 pipe_height = 512
 
+# simple dt timer
+last_time = pygame.time.get_ticks()
+
+next_pair_id = 0  # unique id for each pipe pair
 
 class Bird(pygame.Rect):
     def __init__(self, img):
@@ -71,14 +73,17 @@ class Pipe(pygame.Rect):
         pygame.Rect.__init__(self, pipe_x, pipe_y, pipe_width, pipe_height)
         self.img = img
         self.passed = False
+        self.vy = 0.0  # vertical movement speed
 
 
 async def main():
     global bird, pipes, velocity_x, velocity_y, gravity, score, game_over, window, clock
 
+    
 
     # Initialize pygame but immediately quit mixer to control it later
     pygame.init()
+
     # Immediately quit mixer so we can initialize it properly on first gesture
     if pygame.mixer.get_init():
         pygame.mixer.quit()
@@ -140,7 +145,7 @@ async def main():
     base_image = pygame.transform.scale(base_image, (GAME_WIDTH, pipe_height // 8))
     base_rect = base_image.get_rect(topleft=(0, GAME_HEIGHT - base_image.get_height()))
 
-    bird_image = load_image_safe(ASSETS / "flappybird.png", True)
+    bird_image = load_image_safe(ASSETS / "redbird-midflap.png", True)
     bird_image = pygame.transform.scale(bird_image, (bird_width, bird_height))
 
     top_pipe_image = load_image_safe(ASSETS / "toppipe.png", True)
@@ -152,10 +157,12 @@ async def main():
     emoji_image = load_image_safe(ASSETS / "score.png", True)
     emoji_image = pygame.transform.scale(emoji_image, (75, 75))
 
+    gameover_image = load_image_safe(ASSETS / "gameover.png", True)
+    gameover_image = pygame.transform.scale(gameover_image, (192, 42))
+
     # Game state
     bird = Bird(bird_image)
     pipes = []
-    base = False
     velocity_x = -2
     velocity_y = 0
     gravity = 0.4
@@ -258,10 +265,11 @@ async def main():
 
         # Draw game over text (properly centered)
         if game_over:
-            game_over_txt = font.render("GAME OVER", True, (255, 255, 255))
-            game_over_x = GAME_WIDTH / 2 - game_over_txt.get_width() / 2
+            # Optional: draw game over text
+            # game_over_txt = font.render("GAME OVER", True, (255, 255, 255))
+            game_over_x = GAME_WIDTH / 2 - gameover_image.get_width() / 2
             game_over_y = GAME_HEIGHT / 2 - 50
-            window.blit(game_over_txt, (game_over_x, game_over_y))
+            window.blit(gameover_image, (game_over_x, game_over_y))
             
             restart_txt = font_small.render("Tap to restart", True, (255, 255, 255))
             restart_x = GAME_WIDTH / 2 - restart_txt.get_width() / 2
@@ -269,59 +277,116 @@ async def main():
             window.blit(restart_txt, (restart_x, restart_y))
 
     def create_pipe():
-        gap = 180
-        pipe_y_min = gap
-        pipe_y_max = GAME_HEIGHT - gap
-        pipe_y = random.randint(pipe_y_min, pipe_y_max)
+        gap = current_gap(score)
 
+        # choose a vertical center safely on screen
+        center_min = 120
+        center_max = GAME_HEIGHT - base_rect.height - 120
+        center_y = random.randint(center_min, center_max)
+
+        # difficulty-scaled speed for THIS PAIR (top drives)
+        factor = difficulty_factor(score)
+        max_speed = 0.5 + factor * 1.5  # 0.5 → 2.0
+        vy = random.choice([-1, 1]) * random.uniform(0.3, max_speed)
+
+        # top pipe (driver)
         top_pipe = Pipe(top_pipe_image)
         top_pipe.x = pipe_x
-        top_pipe.y = pipe_y - pipe_height - (gap / 2)
+        top_pipe.y = center_y - gap // 2 - pipe_height
+        top_pipe.vy = 0  # No vertical movement initially
 
+        #  bottom pipe (follower) 
         bottom_pipe = Pipe(bottom_pipe_image)
         bottom_pipe.x = pipe_x
-        bottom_pipe.y = pipe_y + (gap / 2)
+        bottom_pipe.y = center_y + gap // 2
+        bottom_pipe.vy = 0.0  # follower pipe ignored
 
+        #  append in order (top, bottom)
         pipes.extend([top_pipe, bottom_pipe])
+
 
     def move():
         global velocity_y, score, game_over
 
+        # --- Bird physics ---
         velocity_y += gravity
         bird.y += int(float(velocity_y))
         bird.y = max(bird.y, 0)
-        
-        # Ground collision (base)
+
         if bird.bottom > base_rect.top:
-            bird.bottom = base_rect.top # sit on top of base
+            bird.bottom = base_rect.top
             velocity_y = 0
             game_over = True
-            if audio_initialized:
-                try:
-                    sfx.play_fall()
-                except Exception as e:
-                    print(f"Fall sound error: {e}")
+            try: sfx.play_fall()
+            except Exception: pass
+        
+        vertical_pipe_movement = score >= 25
 
-        # Move pipes toward bird            
-        for pipe in pipes:
-            pipe.x += velocity_x
+        # --- difficulty knobs for chaos flips ---
+        factor = difficulty_factor(score) if vertical_pipe_movement else 0.0
+        max_speed = 0.5 + factor * 1.5    # 0.5 → 2.0
+        flip_chance = factor * 0.05       # 0% → 5%
 
-            if not pipe.passed and bird.x > pipe.x + pipe.width:
-                score += 0.5
-                print(f"[SCORE] Increased to {score:.1f}")
-                sfx.play_score_sound()
-                pipe.passed = True
+        gap = current_gap(score)
 
-            if bird.colliderect(pipe):
+        # Bounds so the pair stays fully visible:
+        # limit top pipe's y so bottom won't dip into the base
+        min_top_y = -pipe_height
+        max_top_y = (GAME_HEIGHT - base_rect.height) - (pipe_height + gap)
+
+        # Iterate pairs: (top, bottom) = (pipes[i], pipes[i+1])
+        i = 0
+        while i + 1 < len(pipes):
+            top = pipes[i]
+            bottom = pipes[i + 1]
+
+            # horizontal scroll (both share same x)
+            
+            top.x += velocity_x
+            bottom.x = top.x
+
+            # vertical: top drives
+            top.y += top.vy
+            # clamp & bounce the driver within safe band
+            bounced = False
+            if top.y < min_top_y:
+                top.y = min_top_y
+                bounced = True
+            elif top.y > max_top_y:
+                top.y = max_top_y
+                bounced = True
+            if bounced:
+                top.vy *= -1
+
+            # occasional chaos flip (driver only)
+            if flip_chance > 0 and random.random() < flip_chance:
+                top.vy = random.choice([-1, 1]) * random.uniform(0.3, max_speed)
+
+            # follower keeps the gap exactly
+            bottom.y = top.y + pipe_height + gap
+
+            # scoring: +1 per pair when bird has passed the right edge
+            if (not getattr(top, "passed", False)) and bird.x > top.x + top.width:
+                score += 1.0
+                try: sfx.play_score_sound()
+                except Exception: pass
+                top.passed = True
+                bottom.passed = True
+
+            # collisions
+            if bird.colliderect(top) or bird.colliderect(bottom):
                 game_over = True
-                if audio_initialized:
-                    try:
-                        sfx.play_crash()
-                    except Exception as e:
-                        print(f"Crash sound error: {e}")
+                try: sfx.play_crash()
+                except Exception: pass
 
-        while len(pipes) > 0 and pipes[0].x + pipe_width < -pipe_width:
-            pipes.pop(0)
+            i += 2  # next pair
+
+        # purge off-screen pairs
+        # remove from the front while the *first* (top) is fully offscreen
+        while len(pipes) >= 2 and pipes[0].x + pipe_width < -pipe_width:
+            # remove the pair (top & bottom)
+            del pipes[0:2]
+
 
     # Timer for pipe creation
     create_pipes_timer = pygame.USEREVENT + 1

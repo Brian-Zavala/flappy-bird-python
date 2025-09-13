@@ -28,38 +28,37 @@ jobs:
         run: |
           pip install pygame-ce pygbag
 
-      - name: Build with pygbag and enable autorun
+      - name: Build with pygbag using custom template
         run: |
-          python -m pygbag --build --archive main.py
-          # Force autorun to 1 so game starts automatically
-          sed -i 's/autorun : 0/autorun : 1/g' build/web/index.html
+          python -m pygbag --build --archive --template custom_template.tmpl main.py
+          # Keep the custom start screen (no autorun modification needed)
 
       - name: Ensure assets are in build/web
         run: |
           echo "=== Copying assets to build/web ==="
-          
+
           # Create directories if they don't exist
           mkdir -p build/web/assets
           mkdir -p build/web/sounds
-          
+
           # Copy entire assets folder
           if [ -d "assets" ]; then
             cp -rv assets/* build/web/assets/ || true
             echo "✓ Copied assets folder"
           fi
-          
+
           # Copy entire sounds folder
           if [ -d "sounds" ]; then
             cp -rv sounds/* build/web/sounds/ || true
             echo "✓ Copied sounds folder"
           fi
-          
+
           # Also copy sound_effects.py to build
           if [ -f "sound_effects.py" ]; then
             cp -v sound_effects.py build/web/ || true
             echo "✓ Copied sound_effects.py"
           fi
-          
+
           echo ""
           echo "=== Final build/web structure ==="
           find build/web -type f -name "*.png" -o -name "*.ogg" -o -name "*.ttf" -o -name "*.py" | sort
