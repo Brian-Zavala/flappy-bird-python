@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no" />
-  <title>{{ title }}</title>
+  <title>Flappy Bird Remix</title>
   <style>
     * {
       margin: 0;
@@ -49,7 +49,7 @@
       left: 0;
       width: 100%;
       height: 100%;
-      object-fit: cover; /* Fill entire viewport */
+      object-fit: contain; /* Fit image within viewport maintaining aspect ratio */
       pointer-events: none; /* Ensure clicks pass through to splash div */
     }
     
@@ -94,8 +94,8 @@
     <div id="tap-text">Tap to Start</div>
   </div>
   
-  <!-- Game canvas with tabindex for focus support -->
-  <canvas id="canvas" tabindex="0"></canvas>
+  <!-- Game canvas with explicit dimensions and tabindex for focus support -->
+  <canvas id="canvas" width="360" height="640" tabindex="0"></canvas>
 
   {{ pygbag_scripts }}
 
@@ -104,8 +104,20 @@
     let splashHidden = false;
     let imageLoaded = false;
     
+    // Wait for canvas to be ready (non-zero dimensions and context available)
+    async function waitForCanvasReady() {
+      const canvas = document.getElementById('canvas');
+      for (let i = 0; i < 50; i++) { // ~5s max wait
+        if (canvas && canvas.width > 0 && canvas.height > 0 && canvas.getContext) {
+          return canvas;
+        }
+        await new Promise(r => setTimeout(r, 100));
+      }
+      return canvas; // return best effort
+    }
+    
     // Handle splash screen removal
-    function hideSplash() {
+    async function hideSplash() {
       // Prevent multiple calls
       if (splashHidden) return;
       splashHidden = true;
@@ -114,7 +126,7 @@
       const splash = document.getElementById('splash');
       if (splash) {
         splash.style.display = 'none';
-        // Also remove from DOM after hiding to free memory
+        // Clean up DOM after hiding
         setTimeout(() => {
           if (splash.parentNode) {
             splash.parentNode.removeChild(splash);
@@ -122,48 +134,36 @@
         }, 500);
       }
       
-      // Focus canvas and trigger game start
-      const canvas = document.getElementById('canvas');
+      // Wait for canvas to be ready
+      const canvas = await waitForCanvasReady();
       if (canvas) {
         // Focus canvas for keyboard input
         canvas.focus();
         
-        // Send multiple events to ensure game starts
+        // Give runtime time to initialize, then send events
         setTimeout(() => {
           try {
-            // Send mousedown first
-            const mouseDown = new MouseEvent('mousedown', {
-              view: window,
-              bubbles: true,
-              cancelable: true,
-              clientX: canvas.offsetWidth / 2,
-              clientY: canvas.offsetHeight / 2
+            // Send mouse events sequence
+            ['mousedown', 'mouseup', 'click'].forEach(type => {
+              canvas.dispatchEvent(new MouseEvent(type, {
+                view: window,
+                bubbles: true,
+                cancelable: true,
+                clientX: canvas.offsetWidth / 2,
+                clientY: canvas.offsetHeight / 2
+              }));
             });
-            canvas.dispatchEvent(mouseDown);
             
-            // Then mouseup
-            const mouseUp = new MouseEvent('mouseup', {
-              view: window,
-              bubbles: true,
-              cancelable: true,
-              clientX: canvas.offsetWidth / 2,
-              clientY: canvas.offsetHeight / 2
-            });
-            canvas.dispatchEvent(mouseUp);
-            
-            // Finally click
-            const click = new MouseEvent('click', {
-              view: window,
-              bubbles: true,
-              cancelable: true,
-              clientX: canvas.offsetWidth / 2,
-              clientY: canvas.offsetHeight / 2
-            });
-            canvas.dispatchEvent(click);
+            // Also send a spacebar press (common jump key)
+            document.dispatchEvent(new KeyboardEvent('keydown', {
+              key: ' ',
+              code: 'Space',
+              bubbles: true
+            }));
           } catch (e) {
-            console.log('Error dispatching events:', e);
+            console.log('Event dispatch error:', e);
           }
-        }, 200); // Increased delay for game initialization
+        }, 600); // Longer delay for slower devices
       }
     }
     
@@ -182,8 +182,19 @@
           if (e.cancelable) {
             e.preventDefault();
           }
-          e.stopPropagation();
+          // DO NOT stop propagation - let the gesture bubble for Pygbag's audio policy
+          // e.stopPropagation(); // REMOVED - this was blocking the runtime!
+          
           hideSplash();
+          
+          // Also forward a click to document to help with autoplay/user-activation
+          setTimeout(() => {
+            try {
+              document.body.dispatchEvent(new MouseEvent('click', { bubbles: true }));
+            } catch (err) {
+              console.log('Could not forward click:', err);
+            }
+          }, 0);
         }
         
         // Mouse events
