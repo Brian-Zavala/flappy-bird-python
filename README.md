@@ -1,6 +1,6 @@
 # Flappy Bird Python
 
-A modern take on the classic Flappy Bird game built with Python and Pygame with a family joke thrown in (I had to make the kids laugh). Features smooth gameplay(60 fps), dynamic themes(day & dark), and web deployment support.
+The classic Flappy Bird game built with Python and Pygame with a family joke thrown in (I had to make the kids laugh). Features smooth gameplay(60 fps), dynamic themes(day & dark), and web deployment support.
 
 ## Features
 
