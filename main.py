@@ -376,7 +376,7 @@ async def main():
             try: sfx.play_fall()
             except Exception: pass
         
-        vertical_pipe_movement = score >= 25
+        vertical_pipe_movement = score >= 6
 
         # --- difficulty knobs for chaos flips ---
         factor = difficulty_factor(score) if vertical_pipe_movement else 0.0

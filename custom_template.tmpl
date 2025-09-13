@@ -68,7 +68,7 @@
     #start-button:hover  { background: #f39c12; transform: translateX(-50%) scale(1.05); }
     #start-button:active { transform: translateX(-50%) scale(0.95); }
 
-    /* Canvas initially hidden */
+    /* Canvas always visible but behind overlay initially */
     #canvas {
       display: block;
       width: 100%;
@@ -76,9 +76,6 @@
       image-rendering: pixelated;
       image-rendering: -moz-crisp-edges;
       image-rendering: crisp-edges;
-    }
-    #canvas.hidden { 
-      display: none !important; 
     }
   </style>
 </head>
@@ -89,53 +86,57 @@
            onerror="this.style.display='none'"/>
       <button id="start-button" type="button">Press to Start</button>
     </div>
-    <canvas id="canvas" class="hidden"></canvas>
+    <canvas id="canvas"></canvas>
   </div>
 
   {{ pygbag_scripts }}
 
   <script>
-    // Wait for Module to be ready
-    let gameStarted = false;
+    // Simple approach: just hide the overlay when button is clicked
+    // The game will already be running in the background
     
     function startGame() {
-      if (gameStarted) return;
-      gameStarted = true;
-      
-      // Hide title screen
+      // Hide the title overlay
       const titleScreen = document.getElementById('custom-title');
-      titleScreen.style.display = 'none';
+      if (titleScreen) {
+        titleScreen.style.display = 'none';
+      }
       
-      // Show canvas
+      // Send a click event to the canvas to ensure the game responds
       const canvas = document.getElementById('canvas');
-      canvas.classList.remove('hidden');
-      
-      // Force canvas to be visible
-      canvas.style.display = 'block';
-      
-      // Start the game - check if Module is ready
-      if (window.Module) {
-        // Trigger a resize event to ensure canvas is properly sized
-        window.dispatchEvent(new Event('resize'));
+      if (canvas) {
+        // Create and dispatch a click event to the canvas
+        const clickEvent = new MouseEvent('click', {
+          view: window,
+          bubbles: true,
+          cancelable: true,
+          clientX: canvas.width / 2,
+          clientY: canvas.height / 2
+        });
+        canvas.dispatchEvent(clickEvent);
         
-        // Start the game if the run function exists
-        if (Module.pygbag && typeof Module.pygbag.run === 'function') {
-          Module.pygbag.run();
-        } else if (Module.resume) {
-          // Alternative: try to resume if game is paused
-          Module.resume();
-        }
+        // Focus the canvas for keyboard input
+        canvas.focus();
       }
     }
     
-    // Add event listener to start button
-    document.getElementById('start-button').addEventListener('click', startGame);
-    
-    // Also allow starting with keyboard
-    document.addEventListener('keydown', function(e) {
-      if (!gameStarted && (e.code === 'Space' || e.code === 'Enter')) {
-        startGame();
+    // Wait for DOM to be ready
+    document.addEventListener('DOMContentLoaded', function() {
+      const startButton = document.getElementById('start-button');
+      if (startButton) {
+        startButton.addEventListener('click', startGame);
       }
+      
+      // Also allow starting with keyboard
+      document.addEventListener('keydown', function(e) {
+        const titleScreen = document.getElementById('custom-title');
+        if (titleScreen && titleScreen.style.display !== 'none') {
+          if (e.code === 'Space' || e.code === 'Enter') {
+            e.preventDefault();
+            startGame();
+          }
+        }
+      });
     });
   </script>
 </body>
