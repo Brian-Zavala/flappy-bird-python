@@ -30,10 +30,10 @@ GAME_WIDTH = 360
 GAME_HEIGHT = 640
 
 # bird pitch constants 
-MAX_PITCH_UP_DEG    = 25.0    # nose-up clamp
+MAX_PITCH_UP_DEG    = 58.0    # nose-up clamp
 MAX_PITCH_DOWN_DEG  = -90.0   # nose-down clamp
-PITCH_GAIN          = 3.0     # maps velocity_y -> degrees
-PITCH_LERP_PER_SEC  = 12.0    # smoothing speed (higher = snappier)
+PITCH_GAIN          = 15.0     # maps velocity_y -> degrees
+PITCH_LERP_PER_SEC  = 6.0    # smoothing speed (higher = snappier)
 
 
 
@@ -46,8 +46,8 @@ ASSETS = ROOT / "assets"
 # bird class
 bird_x = GAME_WIDTH / 8
 bird_y = GAME_HEIGHT / 2
-bird_width = 34
-bird_height = 24
+bird_width = 44
+bird_height = 34
 
 
 # Pipe class
