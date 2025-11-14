@@ -31,7 +31,7 @@ jobs:
         run: |
           set -euxo pipefail
           python -m pip install --upgrade pip
-          pip install pygame-ce pygbag==0.9.2
+          pip install --upgrade pygame-ce pygbag
 
       - name: Clean previous builds & cache
         run: |
