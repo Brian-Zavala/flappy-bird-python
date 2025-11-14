@@ -16,4 +16,3 @@ web = [
 ]
 
 [tool.pygbag]
-cdn = "https://pygame-web.github.io/archives/repo/"
